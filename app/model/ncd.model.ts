@@ -1,0 +1,38 @@
+import type { ReportStatus } from "./interview.model";
+
+export type NCD = {
+  Qid1_Yn: boolean;
+  Qid2_Yn: boolean;
+  Qid3_Yn: boolean;
+  Qid4_Yn: boolean;
+  Qid5_Yn: boolean;
+  Qid6_Yn: boolean;
+  Qid7_Yn: boolean;
+  Qid8_Yn: boolean;
+  Qid9_Yn: boolean;
+  Qid10_Yn: boolean;
+  Qid11_Yn: boolean;
+  Qid12_Yn: boolean;
+  Qid13_Yn: boolean;
+  Qid14_Yn: boolean;
+  Qid15_Yn: boolean;
+  Qid16_Yn: boolean;
+  Qid17_Abdc: string;
+  Qid18_Yn: boolean;
+  Qid19_Fbsmg: number;
+  Qid19_Fbsmmol: number;
+  Qid19_Fbsdate: Date;
+  Qid20_Yn: boolean;
+  Qid20_Choleval: number;
+  Qid20_Choledate: Date;
+  Qid21_Yn: boolean;
+  Qid21_Ketonval: string;
+  Qid21_Ketondate: Date;
+  Qid22_Yn: boolean;
+  Qid22_Proteinval: string;
+  Qid22_Proteindate: Date;
+  Qid23_Yn: boolean;
+  Qid24_Yn: boolean;
+  status: ReportStatus;
+  remarks?: string;
+};

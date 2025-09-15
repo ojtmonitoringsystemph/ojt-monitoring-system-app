@@ -1,0 +1,49 @@
+# .github/workflows/firebase-deploy.yml
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - develop
+      - test
+      - main
+
+jobs:
+  deploy_develop:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FTCC_HEALTH_ADMIN_DEV }}
+          channelId: live
+          projectId: ftcc-health-admin-dev
+
+  deploy_test:
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FTCC_HEALTH_ADMIN_TEST }}
+          channelId: live
+          projectId: ftcc-health-admin-test
+
+  deploy_prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FTCC_HEALTH_ADMIN_PROD }}
+          channelId: live
+          projectId: ftcc-health-admin-prod

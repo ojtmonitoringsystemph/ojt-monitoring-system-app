@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "default": "healthlink-main",
+    "develop": "healthlink-dev",
+    "test": "healthlink-test",
+    "production": "healthlink-prod"
+  },
+  "targets": {},
+  "etags": {}
+}
