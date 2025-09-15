@@ -1,9 +1,6 @@
 {
   "projects": {
-    "default": "healthlink-main",
-    "develop": "healthlink-dev",
-    "test": "healthlink-test",
-    "production": "healthlink-prod"
+    "default": "ojt-ms-app"
   },
   "targets": {},
   "etags": {}
