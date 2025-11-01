@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
 import {
   Card,
@@ -11,71 +11,50 @@ import { Input } from "@/components/atoms/input";
 import { Plus, Search } from "lucide-react";
 import CoordinatorCard from "@/components/templates/cards/coordinator.card";
 import { type PageProps } from "@/types/page.type";
+import { userService } from "@/services/user.service"; // your imported service
 
 const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [coordinators, setCoordinators] = useState([
-    {
-      id: "1",
-      name: "Dr. Sarah Johnson",
-      email: "sarah.johnson@university.edu",
-      phone: "+1 (555) 123-4567",
-      department: "Computer Science",
-      location: "Building A, Room 302",
-      avatar: "",
-      studentsAssigned: 15,
-      specialization: "Software Engineering",
-      status: "active" as const,
-    },
-    {
-      id: "2",
-      name: "Prof. Michael Chen",
-      email: "michael.chen@university.edu",
-      phone: "+1 (555) 234-5678",
-      department: "Information Technology",
-      location: "Building B, Room 205",
-      avatar: "",
-      studentsAssigned: 12,
-      specialization: "Data Science",
-      status: "active" as const,
-    },
-    {
-      id: "3",
-      name: "Dr. Emily Rodriguez",
-      email: "emily.rodriguez@university.edu",
-      phone: "+1 (555) 345-6789",
-      department: "Business Administration",
-      location: "Building C, Room 150",
-      avatar: "",
-      studentsAssigned: 20,
-      specialization: "Project Management",
-      status: "inactive" as const,
-    },
-  ]);
+  const [coordinators, setCoordinators] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch coordinators from API
+  const fetchCoordinators = async () => {
+    try {
+      setLoading(true);
+      const response = await userService.getAll({ role: "coordinator" });
+      setCoordinators(Array.isArray(response) ? response : []);
+    } catch (error) {
+      console.error("Error fetching coordinators:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoordinators();
+  }, []);
 
   const filteredCoordinators = coordinators.filter(
     (coordinator) =>
-      coordinator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      coordinator.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      coordinator.specialization
+      `${coordinator.firstName} ${coordinator.lastName}`
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(searchTerm.toLowerCase()) ||
+      coordinator.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (id: string) => {
     console.log("Edit coordinator:", id);
-    // TODO: Implement edit functionality
   };
 
   const handleDelete = (id: string) => {
-    setCoordinators(
-      coordinators.filter((coordinator) => coordinator.id !== id)
-    );
+    setCoordinators((prev) => prev.filter((c) => c._id !== id));
+    // Optional: call API to delete if endpoint exists
   };
 
   const handleAddCoordinator = () => {
     console.log("Add new coordinator");
-    // TODO: Implement add functionality
+    // TODO: implement modal or redirect to add coordinator
   };
 
   return (
@@ -105,21 +84,40 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
               />
             </div>
           </CardHeader>
+
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCoordinators.map((coordinator) => (
-                <CoordinatorCard
-                  key={coordinator.id}
-                  coordinator={coordinator}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-            {filteredCoordinators.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No coordinators found matching your search.
-              </div>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading...</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCoordinators.map((coordinator) => (
+                    <CoordinatorCard
+                      key={coordinator._id}
+                      coordinator={{
+                        id: coordinator._id,
+                        name: `${coordinator.firstName} ${coordinator.lastName}`,
+                        email: coordinator.email,
+                        phone: coordinator.phone || "N/A",
+                        department: coordinator.department || "N/A",
+                        specialization: coordinator.specialization || "N/A",
+                        studentsAssigned: coordinator.studentsAssigned || 0,
+                        status: coordinator.status || "active",
+                        avatar: coordinator.avatar || "",
+                        location: coordinator.location || "",
+                      }}
+                      onEdit={() => handleEdit(coordinator._id)}
+                      onDelete={() => handleDelete(coordinator._id)}
+                    />
+                  ))}
+                </div>
+
+                {filteredCoordinators.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No coordinators found matching your search.
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

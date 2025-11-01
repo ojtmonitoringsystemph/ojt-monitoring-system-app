@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, type ChangeEvent } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
 import {
   Card,
@@ -10,75 +10,147 @@ import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Textarea } from "@/components/atoms/textarea";
 import { Badge } from "@/components/atoms/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/atoms/dialog";
-import { CheckSquare, Plus, Calendar, Edit, Trash2 } from "lucide-react";
+import { CheckSquare, Plus, Edit, Trash2 } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
+import { taskService } from "~/app/services/task.service";
+import { userService } from "~/app/services/user.service";
+
+interface Task {
+  _id: string;
+  title: string;
+  description: string;
+  createdBy: string;
+  assignedTo: Student[];
+  status: string;
+  submissionProofUrl: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Student {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 
 const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
-  const [tasks, setTasks] = useState([
-    {
-      id: "1",
-      taskCode: "TSK001",
-      taskName: "Company Research Report",
-      description:
-        "Conduct thorough research on your assigned company and prepare a comprehensive report.",
-      deadline: "2024-02-15",
-      status: "active" as const,
-      assignedStudents: 5,
-    },
-    {
-      id: "2",
-      taskCode: "TSK002",
-      taskName: "Weekly Progress Report",
-      description:
-        "Submit weekly progress reports detailing your learning and activities.",
-      deadline: "2024-01-30",
-      status: "active" as const,
-      assignedStudents: 12,
-    },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalContent, setModalContent] = useState<{
+    type: "task" | "file" | null;
+    data?: any;
+  }>({ type: null });
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  // Open task details modal
+  const openTaskModal = (task: Task) => {
+    setModalContent({ type: "task", data: task });
+  };
+
+  // Open file modal
+  const openFileModal = (fileUrl: string) => {
+    setModalContent({ type: "file", data: { url: fileUrl } });
+  };
+
+  // Close modal
+  const closeModal = () => setModalContent({ type: null });
+
+  const [showModal, setShowModal] = useState(false);
   const [newTask, setNewTask] = useState({
-    taskCode: "",
-    taskName: "",
+    title: "",
     description: "",
-    deadline: "",
+    files: [] as File[],
   });
 
-  const handleCreateTask = () => {
-    if (
-      newTask.taskCode &&
-      newTask.taskName &&
-      newTask.description &&
-      newTask.deadline
-    ) {
-      const task = {
-        id: Date.now().toString(),
-        ...newTask,
-        status: "active" as const,
-        assignedStudents: 0,
-      };
-      setTasks([...tasks, task]);
-      setNewTask({ taskCode: "", taskName: "", description: "", deadline: "" });
-      setIsCreateDialogOpen(false);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [assignedStudents, setAssignedStudents] = useState<Student[]>([]);
+
+  // Fetch tasks
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await taskService.getAll();
+      setTasks(response);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  // Fetch students
+  const fetchStudents = async (search: string = "") => {
+    try {
+      const params = search
+        ? { name: search, role: "student" }
+        : { role: "student" };
+      const response = await userService.getAll(params);
+      setAllStudents(response);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+    fetchStudents();
+  }, []);
+
+  useEffect(() => {
+    const debounce = setTimeout(() => fetchStudents(studentSearch), 300);
+    return () => clearTimeout(debounce);
+  }, [studentSearch]);
+
+  const handleAssignStudent = (student: Student) => {
+    if (!assignedStudents.find((s) => s._id === student._id)) {
+      setAssignedStudents([...assignedStudents, student]);
+    }
+  };
+
+  const removeAssignedStudent = (id: string) => {
+    setAssignedStudents((prev) => prev.filter((s) => s._id !== id));
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setNewTask((prev) => ({ ...prev, files: Array.from(e.target.files!) }));
+  };
+
+  const handleCreateTask = async () => {
+    if (!newTask.title || !newTask.description) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("title", newTask.title);
+      formData.append("description", newTask.description);
+      assignedStudents.forEach((s) => formData.append("assignedTo[]", s._id));
+      newTask.files.forEach((file) => formData.append("files", file));
+
+      await taskService.create(formData);
+      setNewTask({ title: "", description: "", files: [] });
+      setAssignedStudents([]);
+      setStudentSearch("");
+      setShowModal(false);
+      fetchTasks();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDeleteTask = async (_id: string) => {
+    try {
+      await taskService.delete(_id);
+      setTasks((prev) => prev.filter((task) => task._id !== _id));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
       case "completed":
         return "bg-blue-100 text-blue-800";
       default:
@@ -99,47 +171,43 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               </p>
             </div>
           </div>
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => setShowModal(true)}
           >
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Task
+            <Plus className="h-4 w-4" />
+            Create Task
+          </Button>
+        </div>
+
+        {/* Modal */}
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={() => setShowModal(false)}
+              >
+                ✕
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Task</DialogTitle>
-              </DialogHeader>
+              <h2 className="text-lg font-semibold mb-4">Create New Task</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Task Code
+                  <label className="text-sm font-medium mb-1 block">
+                    Task Title
                   </label>
                   <Input
-                    placeholder="e.g., TSK003"
-                    value={newTask.taskCode}
+                    placeholder="Enter task title"
+                    value={newTask.title}
                     onChange={(e) =>
-                      setNewTask({ ...newTask, taskCode: e.target.value })
+                      setNewTask({ ...newTask, title: e.target.value })
                     }
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Task Name
-                  </label>
-                  <Input
-                    placeholder="Enter task name"
-                    value={newTask.taskName}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, taskName: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-medium mb-1 block">
                     Description
                   </label>
                   <Textarea
@@ -151,42 +219,180 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Deadline
+                  <label className="text-sm font-medium mb-1 block">
+                    Upload Files
+                  </label>
+                  <Input type="file" multiple onChange={handleFileChange} />
+                  {newTask.files.length > 0 && (
+                    <div className="mt-2 flex flex-col gap-1 max-h-40 overflow-y-auto border rounded p-2">
+                      {newTask.files.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between px-2 py-1 bg-gray-50 rounded"
+                        >
+                          <span className="truncate">{file.name}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setNewTask((prev) => ({
+                                ...prev,
+                                files: prev.files.filter((_, i) => i !== idx),
+                              }))
+                            }
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">
+                    Assign To Students
                   </label>
                   <Input
-                    type="date"
-                    value={newTask.deadline}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, deadline: e.target.value })
-                    }
+                    placeholder="Search students..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
                   />
+                  {allStudents.length > 0 && (
+                    <div className="border rounded-lg max-h-48 overflow-y-auto mt-1">
+                      {allStudents.map((student) => (
+                        <div
+                          key={student._id}
+                          className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleAssignStudent(student)}
+                        >
+                          <span>
+                            {student.firstName} {student.lastName} (
+                            {student.email})
+                          </span>
+                          {assignedStudents.some(
+                            (s) => s._id === student._id
+                          ) && (
+                            <CheckSquare className="h-4 w-4 text-green-500" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {assignedStudents.map((s) => (
+                      <Badge
+                        key={s._id}
+                        className="flex items-center gap-1 cursor-pointer"
+                        onClick={() => removeAssignedStudent(s._id)}
+                      >
+                        {s.firstName} <Trash2 className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <Button onClick={handleCreateTask} className="w-full">
+                <Button onClick={handleCreateTask} className="w-full mt-2">
                   Create Task
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </div>
+          </div>
+        )}
+        {modalContent.type && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] p-6 relative overflow-y-auto">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={closeModal}
+              >
+                ✕
+              </Button>
 
+              {modalContent.type === "task" && modalContent.data && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">
+                    {modalContent.data.title}
+                  </h2>
+                  <p>{modalContent.data.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {modalContent.data.assignedTo.map((s: Student) => (
+                      <Badge key={s._id}>{s.firstName}</Badge>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Files</h3>
+                    {modalContent.data.submissionProofUrl.length === 0 ? (
+                      <p>No files uploaded.</p>
+                    ) : (
+                      modalContent.data.submissionProofUrl.map(
+                        (file: string, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            {file.endsWith(".png") ||
+                            file.endsWith(".jpg") ||
+                            file.endsWith(".jpeg") ? (
+                              <img
+                                src={file}
+                                alt="task file"
+                                className="h-16 w-16 object-cover cursor-pointer rounded"
+                                onClick={() => openFileModal(file)}
+                              />
+                            ) : (
+                              <span
+                                className="cursor-pointer text-blue-600 underline"
+                                onClick={() => window.open(file, "_blank")}
+                              >
+                                {file.split("/").pop()}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {modalContent.type === "file" && modalContent.data && (
+                <div className="flex flex-col items-center gap-4">
+                  <img
+                    src={modalContent.data.url}
+                    alt="preview"
+                    className="max-h-[70vh] max-w-full object-contain rounded"
+                  />
+                  <a
+                    href={modalContent.data.url}
+                    download
+                    className="text-blue-600 underline"
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tasks List */}
         <Card>
           <CardHeader>
             <CardTitle>All Tasks</CardTitle>
           </CardHeader>
           <CardContent>
-            {tasks.length > 0 ? (
+            {loading ? (
+              <p className="text-center py-8">Loading tasks...</p>
+            ) : tasks.length > 0 ? (
               <div className="space-y-4">
                 {tasks.map((task) => (
                   <div
-                    key={task.id}
+                    key={task._id}
                     className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{task.taskName}</h3>
-                          <Badge variant="outline">{task.taskCode}</Badge>
+                          <h3 className="font-semibold">{task.title}</h3>
                           <Badge className={getStatusColor(task.status)}>
                             {task.status}
                           </Badge>
@@ -195,21 +401,40 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                           {task.description}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            Due: {new Date(task.deadline).toLocaleDateString()}
+                          <span>
+                            {task.submissionProofUrl?.length ?? 0} file(s)
+                            uploaded
                           </span>
-                          <span>{task.assignedStudents} students assigned</span>
+                          <span>
+                            Assigned: {task.assignedTo?.length ?? 0} student(s)
+                          </span>
                         </div>
+                        {task.assignedTo?.length > 0 && (
+                          <div className="mt-1 text-sm">
+                            {task.assignedTo.map((s) => (
+                              <Badge
+                                key={s._id}
+                                className="mr-1 mb-1 inline-block"
+                              >
+                                {s.firstName}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
+
                       <div className="flex gap-2">
+                        <Button onClick={() => openTaskModal(task)}>
+                          View Details
+                        </Button>
+
                         <Button variant="outline" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteTask(task.id)}
+                          onClick={() => handleDeleteTask(task._id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -59,12 +59,12 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ userRole = "student" }) => {
 
   const studentMenuItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard },
-    { title: "Daily Diary", url: "/diary", icon: BookOpen },
+    // { title: "Daily Diary", url: "/diary", icon: BookOpen },
     { title: "Time Tracking", url: "/time-tracking", icon: Clock },
     { title: "Upload Documents", url: "/upload", icon: Upload },
     { title: "My Tasks", url: "/my-tasks", icon: CheckSquare },
     { title: "Messages", url: "/messages", icon: MessageSquare },
-    { title: "History", url: "/history", icon: Archive },
+    // { title: "History", url: "/history", icon: Archive },
   ];
 
   const getMenuItems = () => {

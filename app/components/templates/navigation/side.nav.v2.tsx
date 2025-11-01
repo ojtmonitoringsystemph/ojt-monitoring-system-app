@@ -34,18 +34,18 @@ interface NavigationItem {
 }
 
 const navigation: NavigationItem[] = [
-  {
-    name: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-    roles: ["admin", "coordinator", "student"],
-  },
-  {
-    name: "Account Management",
-    href: "/accounts",
-    icon: UserCog,
-    roles: ["admin"],
-  },
+  // {
+  //   name: "Dashboard",
+  //   href: "/",
+  //   icon: LayoutDashboard,
+  //   roles: ["admin", "coordinator", "student"],
+  // },
+  // {
+  //   name: "Account Management",
+  //   href: "/accounts",
+  //   icon: UserCog,
+  //   roles: ["admin"],
+  // },
   {
     name: "Students",
     href: "/students",
@@ -60,24 +60,24 @@ const navigation: NavigationItem[] = [
   },
   { name: "Companies", href: "/companies", icon: Building2, roles: ["admin"] },
   { name: "Enrollment", href: "/enrollment", icon: FileText, roles: ["admin"] },
-  {
-    name: "Messages",
-    href: "/messages",
-    icon: MessageSquare,
-    roles: ["admin", "coordinator", "student"],
-  },
-  {
-    name: "Announcements",
-    href: "/announcements",
-    icon: Megaphone,
-    roles: ["admin"],
-  },
-  {
-    name: "Archives",
-    href: "/archives",
-    icon: Archive,
-    roles: ["admin", "student"],
-  },
+  // {
+  //   name: "Messages",
+  //   href: "/messages",
+  //   icon: MessageSquare,
+  //   roles: ["admin", "coordinator", "student"],
+  // },
+  // {
+  //   name: "Announcements",
+  //   href: "/announcements",
+  //   icon: Megaphone,
+  //   roles: ["admin"],
+  // },
+  // {
+  //   name: "Archives",
+  //   href: "/archives",
+  //   icon: Archive,
+  //   roles: ["admin", "student"],
+  // },
   { name: "Tasks", href: "/tasks", icon: CheckSquare, roles: ["coordinator"] },
   {
     name: "Submitted Tasks",
@@ -85,19 +85,19 @@ const navigation: NavigationItem[] = [
     icon: FileText,
     roles: ["coordinator"],
   },
-  {
-    name: "Reports",
-    href: "/reports",
-    icon: BarChart3,
-    roles: ["coordinator"],
-  },
-  { name: "Daily Diary", href: "/diary", icon: BookOpen, roles: ["student"] },
-  {
-    name: "Time Tracking",
-    href: "/time-tracking",
-    icon: Clock,
-    roles: ["student"],
-  },
+  // {
+  //   name: "Reports",
+  //   href: "/reports",
+  //   icon: BarChart3,
+  //   roles: ["coordinator"],
+  // },
+  // { name: "Daily Diary", href: "/diary", icon: BookOpen, roles: ["student"] },
+  // {
+  //   name: "Time Tracking",
+  //   href: "/time-tracking",
+  //   icon: Clock,
+  //   roles: ["student"],
+  // },
   {
     name: "Upload Documents",
     href: "/upload",

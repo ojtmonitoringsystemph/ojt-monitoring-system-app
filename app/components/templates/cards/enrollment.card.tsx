@@ -10,6 +10,14 @@ import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
 import { Calendar, Building2, User, Edit, Trash2, Clock } from "lucide-react";
 
+export type EnrollmentStatus =
+  | "active"
+  | "completed"
+  | "pending"
+  | "cancelled"
+  | "scheduled"
+  | "deployed";
+
 interface EnrollmentCardProps {
   enrollment: {
     id: string;
@@ -17,13 +25,13 @@ interface EnrollmentCardProps {
     studentId: string;
     studentAvatar?: string;
     companyName: string;
-    companyId: string;
+    companyId?: string;
     coordinatorName: string;
-    coordinatorId: string;
-    enrollmentDate: string;
-    startDate: string;
-    endDate: string;
-    status: "active" | "completed" | "pending" | "cancelled";
+    coordinatorId?: string;
+    enrollmentDate?: string;
+    startDate?: string;
+    endDate?: string;
+    status: EnrollmentStatus;
     schoolYear: string;
     program: string;
   };
@@ -36,21 +44,22 @@ const EnrollmentCard: React.FC<EnrollmentCardProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase();
-  };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: EnrollmentStatus) => {
     switch (status) {
       case "active":
+      case "deployed":
         return "default";
       case "completed":
         return "secondary";
       case "pending":
+      case "scheduled":
         return "outline";
       case "cancelled":
         return "destructive";
@@ -116,17 +125,24 @@ const EnrollmentCard: React.FC<EnrollmentCardProps> = ({
             <User className="h-4 w-4 mr-2" />
             Coordinator: {enrollment.coordinatorName}
           </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 mr-2" />
-            Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 mr-2" />
-            Duration: {new Date(
-              enrollment.startDate
-            ).toLocaleDateString()} -{" "}
-            {new Date(enrollment.endDate).toLocaleDateString()}
-          </div>
+          {enrollment.enrollmentDate && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4 mr-2" />
+              Enrolled:{" "}
+              {new Date(enrollment.enrollmentDate).toLocaleDateString()}
+            </div>
+          )}
+          {enrollment.startDate && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Clock className="h-4 w-4 mr-2" />
+              Duration: {new Date(
+                enrollment.startDate
+              ).toLocaleDateString()} -{" "}
+              {enrollment.endDate
+                ? new Date(enrollment.endDate).toLocaleDateString()
+                : "Present"}
+            </div>
+          )}
           <div className="pt-2 border-t">
             <p className="text-sm font-medium">Program</p>
             <p className="text-sm text-muted-foreground">

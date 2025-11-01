@@ -1,6 +1,6 @@
 import { useState } from "react";
-import RoleSwitcher from "@/components/templates/other/role.switcher";
 import { useNavigate } from "react-router";
+import { authService } from "@/services/auth.service"; // adjust path if needed
 
 interface LoginProps {
   onLogin?: (role: "admin" | "coordinator" | "student") => void;
@@ -14,30 +14,38 @@ const Login = ({ onLogin }: LoginProps) => {
   const [role, setRole] = useState<"admin" | "coordinator" | "student">(
     "admin"
   );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = () => {
-    if (!username || !password) {
-      alert("Please enter both username and password.");
-      return;
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await authService.login({
+        role,
+        email: username,
+        password,
+      });
+
+      localStorage.setItem("auth", JSON.stringify(response.data));
+      localStorage.setItem("role", response.data?.user?.role);
+      onLogin?.(role);
+      navigate("/");
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError(
+        err.response?.data?.message ||
+          "Invalid credentials or network error. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    console.log(`Logged in as ${role} with username: ${username}`);
-
-    // Save in localStorage
-    localStorage.setItem("role", role);
-    localStorage.setItem("name", username);
-
-    if (onLogin) {
-      onLogin(role);
-    }
-
-    navigate("/");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
             Internship Management System
@@ -45,19 +53,18 @@ const Login = ({ onLogin }: LoginProps) => {
           <p className="text-gray-500 mt-2">Sign in to continue</p>
         </div>
 
-        {/* Form */}
         <div className="space-y-5">
-          {/* Username */}
+          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-              placeholder="Enter your username"
+              placeholder="Enter your email"
             />
           </div>
 
@@ -75,21 +82,36 @@ const Login = ({ onLogin }: LoginProps) => {
             />
           </div>
 
-          {/* Role Switcher */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Role
-            </label>
-            <RoleSwitcher currentRole={role} onRoleChange={setRole} />
-          </div>
+          {/* Error */}
+          {error && (
+            <p className="text-red-600 text-sm font-medium text-center">
+              {error}
+            </p>
+          )}
 
           {/* Login Button */}
           <button
             onClick={handleLogin}
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg font-medium shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            disabled={loading}
+            className={`w-full ${
+              loading ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"
+            } text-white py-2 px-4 rounded-lg font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition`}
           >
-            Login
+            {loading ? "Signing in..." : "Login"}
           </button>
+
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/register")}
+                className="text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Register here
+              </button>
+            </p>
+          </div>
         </div>
       </div>
     </div>

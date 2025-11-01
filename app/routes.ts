@@ -9,6 +9,7 @@ export const routes: RouteConfig = [
   // Guest Routes
   // index("./routes/_index.tsx"),
   route("/login", "./pages/public/login.page.tsx"),
+  route("/register", "./pages/public/register.page.tsx"),
   layout("./components/templates/layout/_main.protected.layout.v2.tsx", [
     route("/", "./pages/private/index.page.tsx"),
     route("/accounts", "./pages/private/account.page.tsx"),
