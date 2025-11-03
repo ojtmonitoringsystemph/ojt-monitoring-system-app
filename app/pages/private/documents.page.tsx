@@ -1,148 +1,163 @@
 import React, { useEffect, useState, type ChangeEvent } from "react";
-import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
-import { Button } from "@/components/atoms/button";
-import { FileText, Upload } from "lucide-react";
+import { documentService } from "@/services/document.service";
+import PageLayout from "~/app/components/templates/layout/page.layout";
 
-import { type PageProps } from "@/types/page.type";
-import { documentService } from "~/app/services/document.service";
-import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
-
-interface Document {
+interface DocumentEntry {
   _id: string;
-  student: string;
+  student: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string | null;
+  };
   documents: string[];
-  status: "pending" | "approved";
-  remarks?: string;
+  status: string;
+  remarks: string;
+  uploadedAt: string;
 }
 
-const Documents: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-
-  // Fetch documents on mount
-  const fetchDocuments = async () => {
-    try {
-      const res = await documentService.student(
-        getUserFromLocalStorage()?.user?._id || ""
-      );
-      setDocuments(res.data || []);
-    } catch (err) {
-      console.error("Failed to fetch documents:", err);
-    }
-  };
+const DocumentsPage: React.FC = () => {
+  const [documents, setDocuments] = useState<DocumentEntry[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   useEffect(() => {
     fetchDocuments();
   }, []);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setFiles(Array.from(e.target.files));
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const res = await documentService.getAll();
+      setDocuments(Array.isArray(res) ? res : []);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      setDocuments([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
+  const handleSearch = async (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
 
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
+    if (!value.trim()) {
+      fetchDocuments();
+      return;
+    }
 
-    // You can add additional fields like student ID or remarks
-    formData.append("student", getUserFromLocalStorage()?.user?._id || "");
-    formData.append("remarks", "Some remarks");
-
-    setUploading(true);
     try {
-      await documentService.create(formData);
-      setFiles([]);
-      fetchDocuments(); // refresh after upload
-    } catch (err) {
-      console.error("Upload failed:", err);
+      setLoading(true);
+      const res = await documentService.search({ query: value });
+      setDocuments(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error("Error searching documents:", error);
+      setDocuments([]);
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FileText className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Document Review
-              </h1>
-              <p className="text-muted-foreground">
-                Review and approve student documents
-              </p>
-            </div>
-          </div>
+    <PageLayout>
+      <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
+        <h1 style={{ marginBottom: "1.5rem" }}>Documents</h1>
 
-          <div className="flex gap-2">
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-              id="document-upload"
-            />
-            <label htmlFor="document-upload">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                Select Files
-              </Button>
-            </label>
-            <Button
-              variant="default"
-              onClick={handleUpload}
-              disabled={files.length === 0 || uploading}
-            >
-              {uploading ? "Uploading..." : "Upload"}
-            </Button>
-          </div>
-        </div>
+        <input
+          type="text"
+          placeholder="Search documents..."
+          value={searchTerm}
+          onChange={handleSearch}
+          style={{
+            width: "100%",
+            padding: "0.75rem 1rem",
+            fontSize: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            marginBottom: "2rem",
+            boxSizing: "border-box",
+          }}
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Reviews</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {documents.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  No documents pending review
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {documents.map((doc) => (
-                  <li
-                    key={doc._id}
-                    className="border p-3 rounded-md flex justify-between items-center"
+        {loading ? (
+          <div style={{ textAlign: "center" }}>Loading...</div>
+        ) : !documents.length ? (
+          <p style={{ textAlign: "center" }}>No documents found.</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "1.5rem",
+            }}
+          >
+            {documents.map((entry) =>
+              entry.documents.map((fileUrl, index) => (
+                <div
+                  key={`${entry._id}-${index}`}
+                  style={{
+                    border: "1px solid #e0e0e0",
+                    borderRadius: "10px",
+                    padding: "1rem",
+                    backgroundColor: "#fff",
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+                    transition: "transform 0.2s",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) =>
+                    ((e.currentTarget as HTMLDivElement).style.transform =
+                      "translateY(-5px)")
+                  }
+                  onMouseLeave={(e) =>
+                    ((e.currentTarget as HTMLDivElement).style.transform =
+                      "translateY(0)")
+                  }
+                >
+                  <div
+                    style={{
+                      fontSize: "2rem",
+                      marginBottom: "0.5rem",
+                      color: "#1976d2",
+                    }}
                   >
-                    <span>{doc.student}</span>
-                    <Button
-                      variant="link"
-                      onClick={() => window.open(doc.documents[0], "_blank")}
-                    >
-                      View
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+                    📄
+                  </div>
+                  <strong style={{ display: "block", marginBottom: "0.25rem" }}>
+                    {entry.student.firstName} {entry.student.lastName}
+                  </strong>
+                  {entry.remarks && (
+                    <p style={{ fontSize: "0.875rem", color: "#555" }}>
+                      {entry.remarks}
+                    </p>
+                  )}
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "block",
+                      marginTop: "0.5rem",
+                      fontSize: "0.875rem",
+                      color: "#1976d2",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    View File
+                  </a>
+                  <small
+                    style={{ color: "#999", display: "block", marginTop: 4 }}
+                  >
+                    {new Date(entry.uploadedAt).toLocaleDateString()}
+                  </small>
+                </div>
+              ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
     </PageLayout>
   );
 };
 
-export default Documents;
+export default DocumentsPage;

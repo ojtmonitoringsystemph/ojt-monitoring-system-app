@@ -13,12 +13,45 @@ import CoordinatorCard from "@/components/templates/cards/coordinator.card";
 import { type PageProps } from "@/types/page.type";
 import { userService } from "@/services/user.service";
 
-const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
+interface Coordinator {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  department?: string;
+  specialization?: string;
+  status?: string;
+  avatar?: string;
+  location?: string;
+}
+
+const Coordinators: React.FC<PageProps> = ({
+  userRole,
+  userName,
+  onLogout,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [coordinators, setCoordinators] = useState<any[]>([]);
+  const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Fetch all coordinators initially
+  const [showModal, setShowModal] = useState(false);
+  const [editingCoordinator, setEditingCoordinator] =
+    useState<Coordinator | null>(null);
+
+  const [formData, setFormData] = useState({
+    _id: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    department: "",
+    specialization: "",
+    status: "active",
+    location: "",
+  });
+
+  // Fetch all coordinators
   const fetchCoordinators = async () => {
     try {
       setLoading(true);
@@ -31,10 +64,9 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
-  // 🔹 Handle dynamic search (calls BE)
+  // Search coordinators
   const handleSearchCoordinator = async () => {
     if (searchTerm.trim().length < 2) {
-      // If search is empty or too short, show all
       fetchCoordinators();
       return;
     }
@@ -43,15 +75,12 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
       setLoading(true);
       const query = { role: "coordinator" };
       const response = await userService.search(query);
-
-      // Filter results locally by name/email (like in student page)
       const filtered = (Array.isArray(response) ? response : []).filter(
-        (c) =>
+        (c: Coordinator) =>
           c.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           c.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           c.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
-
       setCoordinators(filtered);
     } catch (error) {
       console.error("Error searching coordinators:", error);
@@ -61,19 +90,31 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
-  // 🔹 Debounce search
+  // Debounce search
   useEffect(() => {
     const timeout = setTimeout(() => handleSearchCoordinator(), 300);
     return () => clearTimeout(timeout);
   }, [searchTerm]);
 
-  // 🔹 Initial load
+  // Initial load
   useEffect(() => {
     fetchCoordinators();
   }, []);
 
-  const handleEdit = (id: string) => {
-    console.log("Edit coordinator:", id);
+  const handleEdit = (coordinator: Coordinator) => {
+    setEditingCoordinator(coordinator);
+    setFormData({
+      _id: coordinator._id,
+      firstName: coordinator.firstName,
+      lastName: coordinator.lastName,
+      email: coordinator.email,
+      phone: coordinator.phone || "",
+      department: coordinator.department || "",
+      specialization: coordinator.specialization || "",
+      status: coordinator.status || "active",
+      location: coordinator.location || "",
+    });
+    setShowModal(true);
   };
 
   const handleDelete = (id: string) => {
@@ -81,8 +122,43 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
   };
 
   const handleAddCoordinator = () => {
-    console.log("Add new coordinator");
-    // TODO: implement modal or redirect to add coordinator
+    setEditingCoordinator(null);
+    setFormData({
+      _id: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      department: "",
+      specialization: "",
+      status: "active",
+      location: "",
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      alert("Please fill all required fields.");
+      return;
+    }
+
+    try {
+      if (editingCoordinator) {
+        // Update existing coordinator
+        await userService.patch(formData);
+        alert("Coordinator updated successfully!");
+      } else {
+        // Add new coordinator
+        await userService.create({ ...formData, role: "coordinator" });
+        alert("Coordinator added successfully!");
+      }
+      setShowModal(false);
+      fetchCoordinators();
+    } catch (error) {
+      console.error("Failed to save coordinator:", error);
+      alert("Failed to save coordinator.");
+    }
   };
 
   return (
@@ -131,13 +207,15 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
                         phone: coordinator.phone || "N/A",
                         department: coordinator.department || "N/A",
                         specialization: coordinator.specialization || "N/A",
-                        studentsAssigned: coordinator.studentsAssigned || 0,
-                        status: coordinator.status || "active",
+                        studentsAssigned: 0,
+                        status:
+                          coordinator.status === "inactive"
+                            ? "inactive"
+                            : "active", // ✅ restrict type
                         avatar: coordinator.avatar || "",
                         location: coordinator.location || "",
                       }}
-                      onEdit={() => handleEdit(coordinator._id)}
-                      onDelete={() => handleDelete(coordinator._id)}
+                      onEdit={() => handleEdit(coordinator)}
                     />
                   ))}
                 </div>
@@ -151,6 +229,85 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
             )}
           </CardContent>
         </Card>
+
+        {/* Add/Edit Coordinator Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
+            <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
+              <h2 className="text-xl font-bold">
+                {editingCoordinator ? "Edit Coordinator" : "Add Coordinator"}
+              </h2>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="First Name"
+                  value={formData.firstName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
+                />
+                <Input
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                />
+              </div>
+
+              <Input
+                placeholder="Email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                disabled
+              />
+              {/* 
+              <Input
+                placeholder="Phone"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+              />
+
+              <Input
+                placeholder="Department"
+                value={formData.department}
+                onChange={(e) =>
+                  setFormData({ ...formData, department: e.target.value })
+                }
+              />
+
+              <Input
+                placeholder="Specialization"
+                value={formData.specialization}
+                onChange={(e) =>
+                  setFormData({ ...formData, specialization: e.target.value })
+                }
+              />
+
+              <Input
+                placeholder="Location"
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData({ ...formData, location: e.target.value })
+                }
+              /> */}
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setShowModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>
+                  {editingCoordinator ? "Update" : "Add"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PageLayout>
   );

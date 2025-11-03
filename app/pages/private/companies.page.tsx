@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
 import { Button } from "@/components/atoms/button";
 import CompanyCard from "@/components/templates/cards/company.card";
-import { Building2, Plus } from "lucide-react";
+import { Building2, Plus, Pencil } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { companyService } from "@/services/company.service";
 
@@ -23,6 +23,7 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -59,12 +60,27 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle create
-  const handleCreate = async () => {
+  // Handle create or edit
+  const handleSave = async () => {
     try {
-      const newCompany = await companyService.create(formData);
-      setCompanies((prev) => [...prev, newCompany]);
+      if (editingCompany) {
+        // Update existing company
+        const updatedCompany = await companyService.patch({
+          _id: editingCompany._id,
+          ...formData,
+        });
+        setCompanies((prev) =>
+          prev.map((c) => (c._id === editingCompany._id ? updatedCompany : c))
+        );
+      } else {
+        // Create new company
+        const newCompany = await companyService.create(formData);
+        setCompanies((prev) => [...prev, newCompany]);
+      }
+
+      // Reset
       setShowForm(false);
+      setEditingCompany(null);
       setFormData({
         name: "",
         address: "",
@@ -74,9 +90,37 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
         contactPhone: "",
       });
     } catch (error) {
-      console.error("Error creating company:", error);
-      alert("Failed to create company.");
+      console.error("Error saving company:", error);
+      alert("Failed to save company.");
     }
+  };
+
+  // Open form for editing
+  const handleEdit = (company: Company) => {
+    setEditingCompany(company);
+    setFormData({
+      name: company.name,
+      address: company.address,
+      description: company.description,
+      contactPerson: company.contactPerson,
+      contactEmail: company.contactEmail,
+      contactPhone: company.contactPhone,
+    });
+    setShowForm(true);
+  };
+
+  // Cancel
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingCompany(null);
+    setFormData({
+      name: "",
+      address: "",
+      description: "",
+      contactPerson: "",
+      contactEmail: "",
+      contactPhone: "",
+    });
   };
 
   return (
@@ -95,7 +139,10 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
           </div>
           <Button
             className="flex items-center gap-2"
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingCompany(null);
+              setShowForm(true);
+            }}
           >
             <Plus className="h-4 w-4" />
             Add Company
@@ -112,27 +159,37 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {companies.map((company) => (
-              <CompanyCard
-                key={company._id}
-                company={{
-                  id: company._id,
-                  name: company.name,
-                  location: company.address,
-                  description: company.description,
-                  industry: "—",
-                  activeInterns: 0,
-                  totalInterns: 0,
-                }}
-              />
+              <div key={company._id} className="relative group">
+                <CompanyCard
+                  company={{
+                    id: company._id,
+                    name: company.name,
+                    location: company.address,
+                    description: company.description,
+                    industry: "—",
+                    activeInterns: 0,
+                    totalInterns: 0,
+                  }}
+                />
+                <button
+                  onClick={() => handleEdit(company)}
+                  className="absolute top-2 right-2 p-2 bg-white border rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition"
+                  title="Edit Company"
+                >
+                  <Pencil className="h-4 w-4 text-gray-700" />
+                </button>
+              </div>
             ))}
           </div>
         )}
 
-        {/* Form Modal (No external modal lib used) */}
+        {/* Form Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-black/20 bg-opacity-40 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4">
-              <h2 className="text-xl font-bold">Add New Company</h2>
+              <h2 className="text-xl font-bold">
+                {editingCompany ? "Edit Company" : "Add New Company"}
+              </h2>
 
               <input
                 name="name"
@@ -178,10 +235,12 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
               />
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowForm(false)}>
+                <Button variant="outline" onClick={handleCancel}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreate}>Save</Button>
+                <Button onClick={handleSave}>
+                  {editingCompany ? "Update" : "Save"}
+                </Button>
               </div>
             </div>
           </div>

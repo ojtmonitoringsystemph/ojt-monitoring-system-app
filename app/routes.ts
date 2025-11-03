@@ -27,6 +27,8 @@ export const routes: RouteConfig = [
     route("/upload", "./pages/private/upload.page.tsx"),
     route("/my-tasks", "./pages/private/my.task.page.tsx"),
     route("/history", "./pages/private/history.page.tsx"),
+    route("/profile", "./pages/private/profile.page.tsx"),
+    route("/documents", "./pages/private/documents.page.tsx"),
   ]),
   // layout("./components/templates/layout/_main.interview.layout.tsx", [
   //   route("counter/interview", "./routes/admin.counter.interview.tsx"),

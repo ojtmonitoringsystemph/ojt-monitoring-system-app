@@ -25,12 +25,27 @@ interface Document {
   status: string;
 }
 
+const courseRequirements: Record<string, string[]> = {
+  BSIT: [
+    "Registration form",
+    "School ID",
+    "Good moral",
+    "Resume",
+    "Medical",
+    "MOA",
+    "Notary parent consent",
+    "Internship contract agreement",
+    "Endorsement Letter",
+    "Student Intern's personal history statement",
+    "Acceptance Letter",
+  ],
+  BSBA: ["Medical certificate", "Insurance", "X-ray result"],
+};
+
 const Upload = ({ userRole, userName, onLogout }: PageProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [documentsList, setDocumentsList] = useState<Document[]>([]);
   const [uploading, setUploading] = useState(false);
-
-  // Reference to hidden file input
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchDocuments = async () => {
@@ -49,21 +64,16 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
   }, []);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const filesArray = Array.from(e.target.files);
+    const filesArray = e.target.files ? Array.from(e.target.files) : [];
     setSelectedFiles((prev) => [...prev, ...filesArray]);
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const files = Array.from(e.dataTransfer.files);
-    setSelectedFiles((prev) => [...prev, ...files]);
+    setSelectedFiles((prev) => [...prev, ...Array.from(e.dataTransfer.files)]);
   };
 
-  const handleBrowseClick = () => {
-    // Manually trigger file input
-    fileInputRef.current?.click();
-  };
+  const handleBrowseClick = () => fileInputRef.current?.click();
 
   const handleUpload = async () => {
     if (!selectedFiles.length) return;
@@ -86,39 +96,58 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
+  const userCourse = getUserFromLocalStorage()?.user?.course || "BSIT";
+
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <UploadIcon className="h-8 w-8 text-primary" />
+      <div className="p-6 space-y-8">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <UploadIcon className="h-10 w-10 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-3xl font-extrabold text-foreground">
               Upload Documents
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm mt-1">
               Upload your files — drag and drop or browse manually
             </p>
           </div>
         </div>
 
-        <Card>
+        {/* Course Requirements */}
+        <Card className="shadow-lg border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UploadIcon className="h-5 w-5" /> File Upload
+            <CardTitle className="text-lg font-semibold">
+              Required Documents ({userCourse})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+              {courseRequirements[userCourse]?.map((req, idx) => (
+                <li key={idx}>{req}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* File Upload */}
+        <Card className="shadow-lg border-gray-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <UploadIcon className="h-5 w-5 text-primary" /> Upload Files
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition relative"
             >
               <UploadIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">
                 Drop files here or click below to browse
               </p>
 
-              {/* Hidden input triggered by button */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -127,18 +156,29 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
                 className="hidden"
               />
 
-              <Button onClick={handleBrowseClick} disabled={uploading}>
+              <Button
+                onClick={handleBrowseClick}
+                disabled={uploading}
+                className="mb-2"
+              >
                 Browse Files
               </Button>
 
               {selectedFiles.length > 0 && (
-                <div className="mt-3 text-sm text-muted-foreground">
-                  {selectedFiles.map((f) => f.name).join(", ")}
+                <div className="mt-3 text-sm text-muted-foreground flex flex-wrap gap-2 justify-center">
+                  {selectedFiles.map((f) => (
+                    <span
+                      key={f.name}
+                      className="bg-gray-100 border border-gray-200 rounded px-2 py-1 text-xs"
+                    >
+                      {f.name}
+                    </span>
+                  ))}
                 </div>
               )}
 
               <Button
-                className="mt-4"
+                className="mt-4 w-full sm:w-auto"
                 onClick={handleUpload}
                 disabled={uploading || selectedFiles.length === 0}
               >
@@ -148,39 +188,42 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Uploaded Files */}
+        <Card className="shadow-lg border-gray-200">
           <CardHeader>
-            <CardTitle>Uploaded Files</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              Uploaded Files
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {documentsList.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
+              <p className="text-muted-foreground text-center py-8">
                 No files uploaded yet
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {documentsList.map((doc) =>
                   doc.documents.map((url, idx) => {
                     const isImage = url.match(/\.(jpeg|jpg|png|gif)$/i);
                     return (
                       <div
                         key={`${doc._id}-${idx}`}
-                        className="border rounded-md p-2 flex flex-col items-center"
+                        className="border rounded-md p-3 flex flex-col items-center hover:shadow-lg transition"
                       >
                         {isImage ? (
                           <img
                             src={url}
                             alt="Uploaded"
-                            className="h-32 w-32 object-cover mb-2 rounded"
+                            className="h-32 w-32 object-cover mb-2 rounded-md"
                           />
                         ) : (
-                          <FileText className="h-12 w-12 mb-2" />
+                          <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
                         )}
                         <a
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 underline"
+                          className="text-sm text-blue-600 hover:underline"
                         >
                           {isImage ? "View Image" : "Download File"}
                         </a>

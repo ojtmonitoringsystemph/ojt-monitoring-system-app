@@ -5,6 +5,7 @@ import AppHeader from "@/components/templates/layout/app.header";
 import AppSidebar from "@/components/templates/layout/app.sidebar";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 import { useNavigate } from "react-router";
+import { useAuth } from "~/app/hooks/use.auth";
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,9 @@ const PageLayout = ({
 }: PageLayoutProps) => {
   const navigate = useNavigate();
   const getAuth = getUserFromLocalStorage()?.user;
+
+  console.log(getAuth);
+  const { logout } = useAuth();
 
   useEffect(() => {
     if (!getAuth) {
@@ -39,7 +43,7 @@ const PageLayout = ({
           userName={`${getAuth?.firstName || userName} ${
             getAuth?.lastName || ""
           }`}
-          onLogout={onLogout}
+          onLogout={() => logout()}
         />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>

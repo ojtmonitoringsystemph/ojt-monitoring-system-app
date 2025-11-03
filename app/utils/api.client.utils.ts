@@ -1,4 +1,5 @@
 import type { EnvType, UnifiedURLMapping } from "../types/api-clients.types";
+import { getUserFromLocalStorage } from "./auth.helper";
 
 class APIClientBuilder {
   private token: string = "";
@@ -71,13 +72,16 @@ class APIClientBuilder {
     ) => {
       const isFormData = data instanceof FormData;
       const withAuth = options?.withAuth !== false;
-      const token = withAuth ? this.token : null;
+      const token = withAuth
+        ? this.token || getUserFromLocalStorage()?.accessToken
+        : undefined;
 
       const headers: Record<string, string> = {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options?.headers as Record<string, string>),
+        ...((token && { Authorization: `Bearer ${token}` }) || {}),
+        ...(options?.headers || {}),
       };
 
+      // Only set Content-Type for non-FormData
       if (!isFormData && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
       }

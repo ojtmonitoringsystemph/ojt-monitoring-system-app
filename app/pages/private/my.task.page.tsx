@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
-import { CheckSquare, Trash2, X } from "lucide-react";
+import { CheckSquare, Trash2, X, Upload } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { taskService } from "~/app/services/task.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
@@ -18,10 +18,7 @@ interface Task {
   description: string;
   status: string;
   submissionProofUrl: string[];
-  assignedTo: {
-    _id: string;
-    name: string;
-  }[];
+  assignedTo: { _id: string; name: string }[];
 }
 
 const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
@@ -29,14 +26,14 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null); // For modal
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const fetchMyTasks = async () => {
     try {
       setLoading(true);
       const response = await taskService.student(getAuth?.user?._id);
-
       setTasks(response);
     } catch (error) {
       console.error(error);
@@ -55,6 +52,37 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       fetchMyTasks();
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleFileUpload = async (taskId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    Array.from(files).forEach((file) => formData.append("files", file));
+
+    try {
+      setUploading(true);
+      await taskService.addFilesToSubmissionProof(taskId, formData);
+      await fetchMyTasks();
+      const updatedTask = await taskService.get(taskId);
+      setSelectedTask(updatedTask);
+    } catch (error) {
+      console.error("File upload failed:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileRemove = async (taskId: string, fileUrl: string) => {
+    try {
+      await taskService.removeFilesToSubmissionProof(taskId, {
+        documents: [fileUrl],
+      });
+      await fetchMyTasks();
+      const updatedTask = await taskService.get(taskId);
+      setSelectedTask(updatedTask);
+    } catch (error) {
+      console.error("File removal failed:", error);
     }
   };
 
@@ -134,7 +162,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                           variant="outline"
                           size="sm"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent modal opening
+                            e.stopPropagation();
                             handleMarkComplete(task._id);
                           }}
                         >
@@ -154,7 +182,6 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </CardContent>
         </Card>
 
-        {/* Modal */}
         {/* Modal */}
         {isModalOpen && selectedTask && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -180,6 +207,27 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 {selectedTask.description}
               </p>
 
+              {/* Upload */}
+              <div className="mb-4">
+                <label className="font-semibold mb-2 block">
+                  Upload Submission Proof:
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  disabled={uploading}
+                  onChange={(e) =>
+                    handleFileUpload(selectedTask._id, e.target.files)
+                  }
+                />
+                {uploading && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Uploading files...
+                  </p>
+                )}
+              </div>
+
+              {/* Files List */}
               <p className="font-semibold mb-2">Uploaded Files:</p>
               {selectedTask.submissionProofUrl.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -188,7 +236,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     return (
                       <div
                         key={index}
-                        className="border rounded p-2 flex flex-col items-center"
+                        className="border rounded p-2 flex flex-col items-center relative group"
                       >
                         {isImage ? (
                           <img
@@ -210,6 +258,16 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                         >
                           {fileUrl.split("/").pop()}
                         </a>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() =>
+                            handleFileRemove(selectedTask._id, fileUrl)
+                          }
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
                       </div>
                     );
                   })}

@@ -23,14 +23,9 @@ interface CoordinatorCardProps {
     status: "active" | "inactive";
   };
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
 }
 
-const CoordinatorCard = ({
-  coordinator,
-  onEdit,
-  onDelete,
-}: CoordinatorCardProps) => {
+const CoordinatorCard = ({ coordinator, onEdit }: CoordinatorCardProps) => {
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -71,13 +66,6 @@ const CoordinatorCard = ({
               onClick={() => onEdit(coordinator.id)}
             >
               <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDelete(coordinator.id)}
-            >
-              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>

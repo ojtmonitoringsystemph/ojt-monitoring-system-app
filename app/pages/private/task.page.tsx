@@ -42,20 +42,10 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     data?: any;
   }>({ type: null });
 
-  // Open task details modal
-  const openTaskModal = (task: Task) => {
-    setModalContent({ type: "task", data: task });
-  };
-
-  // Open file modal
-  const openFileModal = (fileUrl: string) => {
-    setModalContent({ type: "file", data: { url: fileUrl } });
-  };
-
-  // Close modal
-  const closeModal = () => setModalContent({ type: null });
-
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -117,9 +107,16 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     setNewTask((prev) => ({ ...prev, files: Array.from(e.target.files!) }));
   };
 
+  const resetModal = () => {
+    setShowModal(false);
+    setIsEditing(false);
+    setEditingTaskId(null);
+    setNewTask({ title: "", description: "", files: [] });
+    setAssignedStudents([]);
+  };
+
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.description) return;
-
     try {
       const formData = new FormData();
       formData.append("title", newTask.title);
@@ -128,10 +125,38 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       newTask.files.forEach((file) => formData.append("files", file));
 
       await taskService.create(formData);
-      setNewTask({ title: "", description: "", files: [] });
-      setAssignedStudents([]);
-      setStudentSearch("");
-      setShowModal(false);
+      resetModal();
+      fetchTasks();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setIsEditing(true);
+    setEditingTaskId(task._id);
+    setShowModal(true);
+    setNewTask({
+      title: task.title,
+      description: task.description,
+      files: [],
+    });
+    setAssignedStudents(task.assignedTo);
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTaskId) return;
+    try {
+      const payload = {
+        _id: editingTaskId,
+        title: newTask.title,
+        description: newTask.description,
+        assignedTo: assignedStudents.map((s) => s._id),
+        files: newTask.files, // should already contain URLs or file metadata, not File objects
+      };
+
+      await taskService.patch(payload); // assumes your patch method sends JSON
+      resetModal();
       fetchTasks();
     } catch (error) {
       console.error(error);
@@ -146,6 +171,16 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       console.error(error);
     }
   };
+
+  const openTaskModal = (task: Task) => {
+    setModalContent({ type: "task", data: task });
+  };
+
+  const openFileModal = (fileUrl: string) => {
+    setModalContent({ type: "file", data: { url: fileUrl } });
+  };
+
+  const closeModal = () => setModalContent({ type: null });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -167,7 +202,7 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
               <p className="text-muted-foreground">
-                Create and manage tasks for students
+                Create, edit, and manage tasks for students
               </p>
             </div>
           </div>
@@ -180,7 +215,7 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </Button>
         </div>
 
-        {/* Modal */}
+        {/* Create / Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
@@ -188,11 +223,13 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 size="sm"
                 variant="ghost"
                 className="absolute top-2 right-2"
-                onClick={() => setShowModal(false)}
+                onClick={resetModal}
               >
                 ✕
               </Button>
-              <h2 className="text-lg font-semibold mb-4">Create New Task</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                {isEditing ? "Edit Task" : "Create New Task"}
+              </h2>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
@@ -290,13 +327,18 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     ))}
                   </div>
                 </div>
-                <Button onClick={handleCreateTask} className="w-full mt-2">
-                  Create Task
+                <Button
+                  onClick={isEditing ? handleUpdateTask : handleCreateTask}
+                  className="w-full mt-2"
+                >
+                  {isEditing ? "Update Task" : "Create Task"}
                 </Button>
               </div>
             </div>
           </div>
         )}
+
+        {/* File / Task Detail Modals */}
         {modalContent.type && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] p-6 relative overflow-y-auto">
@@ -427,8 +469,11 @@ const Tasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                         <Button onClick={() => openTaskModal(task)}>
                           View Details
                         </Button>
-
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditTask(task)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button

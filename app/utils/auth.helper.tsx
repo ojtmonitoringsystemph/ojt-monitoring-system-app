@@ -15,13 +15,22 @@ function decodeToken(token: string) {
 
 // Get user and token from localStorage
 export function getUserFromLocalStorage() {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") return null; // SSR check
+
   try {
-    const stored = localStorage.getItem("auth"); // adjust key if needed
+    const stored = localStorage.getItem("auth");
     if (!stored) return null;
-    return JSON.parse(stored);
+
+    const parsed = JSON.parse(stored);
+
+    // Adjust property check to your stored object
+    if (parsed && typeof parsed === "object" && "accessToken" in parsed) {
+      return parsed;
+    }
+
+    return null;
   } catch (err) {
-    console.error("Failed to parse user from localStorage", err);
+    console.error("Failed to parse user from localStorage:", err);
     return null;
   }
 }

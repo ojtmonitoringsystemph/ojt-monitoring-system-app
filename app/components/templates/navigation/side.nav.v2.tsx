@@ -60,12 +60,12 @@ const navigation: NavigationItem[] = [
   },
   { name: "Companies", href: "/companies", icon: Building2, roles: ["admin"] },
   { name: "Enrollment", href: "/enrollment", icon: FileText, roles: ["admin"] },
-  // {
-  //   name: "Messages",
-  //   href: "/messages",
-  //   icon: MessageSquare,
-  //   roles: ["admin", "coordinator", "student"],
-  // },
+  {
+    name: "Messages",
+    href: "/messages",
+    icon: MessageSquare,
+    roles: ["admin", "coordinator", "student"],
+  },
   // {
   //   name: "Announcements",
   //   href: "/announcements",
@@ -92,12 +92,12 @@ const navigation: NavigationItem[] = [
   //   roles: ["coordinator"],
   // },
   // { name: "Daily Diary", href: "/diary", icon: BookOpen, roles: ["student"] },
-  // {
-  //   name: "Time Tracking",
-  //   href: "/time-tracking",
-  //   icon: Clock,
-  //   roles: ["student"],
-  // },
+  {
+    name: "Documents",
+    href: "/documents",
+    icon: FileText,
+    roles: ["admin", "coordinator"],
+  },
   {
     name: "Upload Documents",
     href: "/upload",
@@ -119,7 +119,7 @@ interface AppSidebarProps {
 
 export default function SidebarV2({ isOpen, setIsOpen }: AppSidebarProps) {
   const location = useLocation();
-  const { logout } = useAuth();
+
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<"admin" | "coordinator" | "student">(
     "student"
@@ -257,7 +257,7 @@ export default function SidebarV2({ isOpen, setIsOpen }: AppSidebarProps) {
           );
         })}
       </nav>
-      <div className="border-t p-4">
+      {/* <div className="border-t p-4">
         <button
           className="flex w-full items-center px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md"
           onClick={() => logout()}
@@ -265,7 +265,7 @@ export default function SidebarV2({ isOpen, setIsOpen }: AppSidebarProps) {
           <LogOut className="mr-3 h-5 w-5 text-gray-400" />
           Logout
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }

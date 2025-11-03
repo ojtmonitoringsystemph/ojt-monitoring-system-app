@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Edit } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { userService } from "~/app/services/user.service";
 import { companyService } from "~/app/services/company.service";
@@ -43,6 +43,9 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const [loading, setLoading] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+
   const [modalSearchTerm, setModalSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [formData, setFormData] = useState({
@@ -58,8 +61,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     setLoading(true);
     try {
       const response = await userService.search({ role: "student" });
-      if (Array.isArray(response)) setStudents(response);
-      else setStudents([]);
+      setStudents(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Error fetching students:", error);
       setStudents([]);
@@ -83,17 +85,14 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     fetchCompanies();
   }, []);
 
-  // Search students for modal (uses BE /user/search)
+  // Search students for modal
   const handleSearchStudent = async () => {
     if (modalSearchTerm.trim().length < 2) {
       setSearchResults([]);
       return;
     }
-
     try {
-      const query = { role: "student" };
-      const response = await userService.search(query);
-
+      const response = await userService.search({ role: "student" });
       const filtered = (Array.isArray(response) ? response : []).filter(
         (s: Student) =>
           !s.metadata?.company &&
@@ -101,7 +100,6 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             s.lastName.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
             s.email.toLowerCase().includes(modalSearchTerm.toLowerCase()))
       );
-
       setSearchResults(filtered);
     } catch (error) {
       console.error("Error searching students:", error);
@@ -114,36 +112,79 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     return () => clearTimeout(timeout);
   }, [modalSearchTerm]);
 
-  const handleSaveEnrollment = async () => {
+  // Add or Edit
+  const handleSaveOrUpdate = async () => {
     if (!formData.userId || !formData.companyId || !formData.deploymentDate) {
       alert("Please fill all fields");
       return;
     }
 
     try {
-      await userService.assignedToCompany({
-        ...formData,
-        coordinatorId: getAuth?.user?._id,
-      });
-      alert("Student assigned successfully!");
+      if (isEditing && editingStudentId) {
+        // 🔹 Update existing student assignment
+        await userService.patch({
+          _id: editingStudentId,
+          metadata: {
+            company: formData.companyId,
+            coordinator: formData.coordinatorId,
+            deploymentDate: formData.deploymentDate,
+            status: formData.status,
+          },
+        });
+        alert("Student details updated successfully!");
+      } else {
+        // 🔹 Assign new student to company
+        await userService.assignedToCompany({
+          ...formData,
+          coordinatorId: getAuth?.user?._id,
+        });
+        alert("Student assigned successfully!");
+      }
+
       fetchStudents();
-      setShowModal(false);
-      setFormData({
-        userId: "",
-        companyId: "",
-        coordinatorId: getAuth?.user?._id,
-        deploymentDate: "",
-        status: "scheduled",
-      });
-      setSearchResults([]);
-      setModalSearchTerm("");
+      closeModal();
     } catch (error) {
-      console.error("Failed to assign student:", error);
-      alert("Failed to assign student.");
+      console.error("Failed to save or update student:", error);
+      alert("Failed to process request.");
     }
   };
 
-  // Filter visible students (only coordinator’s if coordinator)
+  const closeModal = () => {
+    setShowModal(false);
+    setIsEditing(false);
+    setEditingStudentId(null);
+    setFormData({
+      userId: "",
+      companyId: "",
+      coordinatorId: getAuth?.user?._id,
+      deploymentDate: "",
+      status: "scheduled",
+    });
+    setSearchResults([]);
+    setModalSearchTerm("");
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setIsEditing(true);
+    setShowModal(true);
+    setEditingStudentId(student._id);
+    setFormData({
+      userId: student._id,
+      companyId: student.metadata?.company?._id ?? "",
+      coordinatorId: student.metadata?.coordinator?._id ?? getAuth?.user?._id,
+      deploymentDate: student.metadata?.deploymentDate ?? "",
+      status: student.metadata?.status ?? "scheduled",
+    });
+  };
+
+  const filteredStudents = students.filter((s) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      s.firstName.toLowerCase().includes(search) ||
+      s.lastName.toLowerCase().includes(search) ||
+      s.email.toLowerCase().includes(search)
+    );
+  });
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
@@ -154,7 +195,10 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </h1>
           <Button
             className="flex items-center gap-2"
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setShowModal(true);
+              setIsEditing(false);
+            }}
           >
             <Plus className="h-4 w-4" /> Add Student
           </Button>
@@ -188,10 +232,11 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                       <th className="text-left p-3 font-medium">Email</th>
                       <th className="text-left p-3 font-medium">Program</th>
                       <th className="text-left p-3 font-medium">Company</th>
+                      <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {students.map((student) => (
+                    {filteredStudents.map((student) => (
                       <tr
                         key={student._id}
                         className="border-b hover:bg-gray-50"
@@ -203,6 +248,16 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                         <td className="p-3">{student.program ?? "-"}</td>
                         <td className="p-3">
                           {student.metadata?.company?.name ?? "-"}
+                        </td>
+                        <td className="p-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex items-center gap-1"
+                            onClick={() => handleEditStudent(student)}
+                          >
+                            <Edit className="h-4 w-4" /> Edit
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -218,34 +273,40 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </CardContent>
         </Card>
 
-        {/* Add Enrollment Modal */}
+        {/* Add / Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
-              <h2 className="text-xl font-bold">Add Enrollment</h2>
+              <h2 className="text-xl font-bold">
+                {isEditing ? "Edit Student Assignment" : "Add Enrollment"}
+              </h2>
 
-              <Input
-                placeholder="Search student..."
-                value={modalSearchTerm}
-                onChange={(e) => setModalSearchTerm(e.target.value)}
-              />
+              {!isEditing && (
+                <>
+                  <Input
+                    placeholder="Search student..."
+                    value={modalSearchTerm}
+                    onChange={(e) => setModalSearchTerm(e.target.value)}
+                  />
 
-              {searchResults.length > 0 && (
-                <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
-                  {searchResults.map((s) => (
-                    <div
-                      key={s._id}
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, userId: s._id }))
-                      }
-                      className={`p-2 cursor-pointer rounded hover:bg-gray-100 ${
-                        formData.userId === s._id ? "bg-gray-200" : ""
-                      }`}
-                    >
-                      {s.firstName} {s.lastName} ({s.email})
+                  {searchResults.length > 0 && (
+                    <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
+                      {searchResults.map((s) => (
+                        <div
+                          key={s._id}
+                          onClick={() =>
+                            setFormData((prev) => ({ ...prev, userId: s._id }))
+                          }
+                          className={`p-2 cursor-pointer rounded hover:bg-gray-100 ${
+                            formData.userId === s._id ? "bg-gray-200" : ""
+                          }`}
+                        >
+                          {s.firstName} {s.lastName} ({s.email})
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
 
               <Select
@@ -277,11 +338,29 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 }
               />
 
+              <Select
+                value={formData.status}
+                onValueChange={(val) =>
+                  setFormData((prev) => ({ ...prev, status: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="deployed">Deployed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowModal(false)}>
+                <Button variant="outline" onClick={closeModal}>
                   Cancel
                 </Button>
-                <Button onClick={handleSaveEnrollment}>Assign</Button>
+                <Button onClick={handleSaveOrUpdate}>
+                  {isEditing ? "Update" : "Assign"}
+                </Button>
               </div>
             </div>
           </div>

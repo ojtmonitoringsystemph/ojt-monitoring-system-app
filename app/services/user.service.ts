@@ -11,5 +11,11 @@ export const userService = {
   create: (data: any) => api.post("/user", data, { withAuth: true }),
   assignedToCompany: (data: any) =>
     api.post("/user/assign-company", data, { withAuth: true }),
+  unassignCompany: (data: any) =>
+    api.post("/user/unassign-company", data, { withAuth: true }),
+  updateUserDeploymentStatus: (data: any) =>
+    api.post("/user/update-deployment-status", data, { withAuth: true }),
   search: (data: any) => api.post("/user/search", data, { withAuth: true }),
+  upload: (id: string, data: any) =>
+    api.post(`/user/upload/${id}`, data, { withAuth: true }),
 };

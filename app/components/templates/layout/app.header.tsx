@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { Badge } from "@/components/atoms/badge";
+import { useNavigate } from "react-router";
 
 interface AppHeaderProps {
   onMenuToggle?: () => void;
@@ -23,6 +24,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   userName = "John Doe",
   onLogout,
 }) => {
+  const navigate = useNavigate();
   return (
     <header className="h-16 bg-white border-b border-border px-4 lg:px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-4">
@@ -54,7 +56,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="relative">
+        {/* <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-5 w-5" />
           <Badge
             variant="destructive"
@@ -62,7 +64,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           >
             3
           </Badge>
-        </Button>
+        </Button> */}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -81,7 +83,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>

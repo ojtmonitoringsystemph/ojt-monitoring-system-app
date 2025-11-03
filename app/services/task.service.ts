@@ -10,4 +10,8 @@ export const taskService = {
   patch: (data: any) => api.patch(`/task`, data, { withAuth: true }),
   delete: (id: string) => api.delete(`/task/${id}`, { withAuth: true }),
   create: (data: any) => api.post("/task", data, { withAuth: true }),
+  addFilesToSubmissionProof: (id: string, data: any) =>
+    api.post(`/task/add-files/${id}`, data, { withAuth: true }),
+  removeFilesToSubmissionProof: (id: string, data: any) =>
+    api.post(`/task/remove-files/${id}`, data, { withAuth: true }),
 };
