@@ -57,7 +57,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const response = await userService.getAll({ role: "student" });
+      const response = await userService.search({ role: "student" });
       if (Array.isArray(response)) setStudents(response);
       else setStudents([]);
     } catch (error) {
@@ -144,16 +144,6 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   };
 
   // Filter visible students (only coordinator’s if coordinator)
-  const filteredStudents = students.filter((student) => {
-    const matchSearch = `${student.firstName} ${student.lastName}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchCoordinator =
-      getAuth?.user?.role === "coordinator"
-        ? student.metadata?.coordinator?._id === getAuth?.user?._id
-        : true;
-    return matchSearch && matchCoordinator;
-  });
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
@@ -201,7 +191,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStudents.map((student) => (
+                    {students.map((student) => (
                       <tr
                         key={student._id}
                         className="border-b hover:bg-gray-50"
@@ -218,7 +208,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     ))}
                   </tbody>
                 </table>
-                {filteredStudents.length === 0 && (
+                {students.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     No students found.
                   </div>

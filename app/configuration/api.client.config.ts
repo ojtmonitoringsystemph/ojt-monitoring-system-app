@@ -8,7 +8,7 @@ const getTokenFromStorage = getUserFromLocalStorage()?.accessToken;
 
 const req = apiClient()
   .config({
-    token: token || getTokenFromStorage,
+    token: getTokenFromStorage || token,
   })
   .url(APP.HOSTING);
 

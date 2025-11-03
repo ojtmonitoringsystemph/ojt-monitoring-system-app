@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
 import {
   Card,
@@ -15,12 +15,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { Plus, Filter, Edit } from "lucide-react";
+import { Plus, Filter, Loader2, Search, X } from "lucide-react";
 import EnrollmentCard from "@/components/templates/cards/enrollment.card";
 import { type PageProps } from "@/types/page.type";
 import { userService } from "@/services/user.service";
 import { companyService } from "@/services/company.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
+
+// ✅ Debounce Hook
+function useDebounce<T>(value: T, delay = 400): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 interface Student {
   _id: string;
@@ -49,7 +59,10 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [coordinatorResults, setCoordinatorResults] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
+
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [coordSearchLoading, setCoordSearchLoading] = useState<boolean>(false);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
@@ -62,11 +75,15 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     status: "scheduled",
   });
 
+  // ✅ Debounced values
+  const debouncedStudentSearch = useDebounce(modalSearchTerm, 5000);
+  const debouncedCoordSearch = useDebounce(coordSearchTerm, 5000);
+
   // 🔁 Fetch enrolled students
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAll({ role: "student" });
+      const response = await userService.search({ role: "student" });
       const data = Array.isArray(response) ? response : [];
       const enrolled = data.filter((u: any) => u.metadata?.company);
       setStudents(enrolled);
@@ -92,58 +109,58 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     fetchCompanies();
   }, []);
 
-  // 🔍 Search non-enrolled students
-  const handleSearchStudent = async () => {
-    try {
-      const response = await userService.getAll({ role: "student" });
-      const data = Array.isArray(response) ? response : [];
-      const filtered = data.filter(
-        (s: any) =>
-          `${s.firstName} ${s.lastName}`
-            .toLowerCase()
-            .includes(modalSearchTerm.toLowerCase()) && !s.metadata?.company
-      );
-      setSearchResults(filtered);
-    } catch (error) {
-      console.error("Error searching students:", error);
-    }
-  };
-
-  // 🔍 Search coordinators
-  const handleSearchCoordinator = async () => {
-    try {
-      const response = await userService.getAll({ role: "coordinator" });
-      const data = Array.isArray(response) ? response : [];
-      const filtered = data.filter((c: any) =>
-        `${c.firstName} ${c.lastName}`
-          .toLowerCase()
-          .includes(coordSearchTerm.toLowerCase())
-      );
-      setCoordinatorResults(filtered);
-    } catch (error) {
-      console.error("Error searching coordinators:", error);
-    }
-  };
-
-  // ⏳ Debounce student search
+  // ✅ Debounced search for students (API-based)
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (modalSearchTerm.trim().length > 1) handleSearchStudent();
-      else setSearchResults([]);
-    }, 400);
-    return () => clearTimeout(timeout);
-  }, [modalSearchTerm]);
+    const fetchStudents = async () => {
+      if (debouncedStudentSearch.trim().length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        setSearchLoading(true);
+        const response = await userService.search({
+          role: "student",
+          firstName: debouncedStudentSearch,
+        });
+        const data = Array.isArray(response) ? response : [];
+        const filtered = data.filter((s: any) => !s.metadata?.company);
+        setSearchResults(filtered);
+      } catch (error) {
+        console.error("Error searching students:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    fetchStudents();
+  }, [debouncedStudentSearch]);
 
-  // ⏳ Debounce coordinator search
+  // ✅ Debounced search for coordinators (API-based)
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (coordSearchTerm.trim().length > 1) handleSearchCoordinator();
-      else setCoordinatorResults([]);
-    }, 400);
-    return () => clearTimeout(timeout);
-  }, [coordSearchTerm]);
+    const fetchCoordinators = async () => {
+      if (debouncedCoordSearch.trim().length < 2) {
+        setCoordinatorResults([]);
+        return;
+      }
+      try {
+        setCoordSearchLoading(true);
+        const response = await userService.search({
+          role: "coordinator",
+          firstName: debouncedCoordSearch,
+        });
+        const data = Array.isArray(response) ? response : [];
+        setCoordinatorResults(data);
+      } catch (error) {
+        console.error("Error searching coordinators:", error);
+        setCoordinatorResults([]);
+      } finally {
+        setCoordSearchLoading(false);
+      }
+    };
+    fetchCoordinators();
+  }, [debouncedCoordSearch]);
 
-  // ✅ Save enrollment (create or update)
+  // ✅ Save enrollment
   const handleSaveEnrollment = async (isUpdate = false) => {
     try {
       if (!formData.userId || !formData.companyId || !formData.deploymentDate) {
@@ -202,28 +219,76 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     return matchesSearch && matchesStatus;
   });
 
-  // 🧩 Reusable modal
+  // ✅ Improved search handlers
+  const handleModalSearchChange = (value: string) => {
+    setModalSearchTerm(value);
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+    }
+  };
+
+  const handleCoordSearchChange = (value: string) => {
+    setCoordSearchTerm(value);
+    if (value.trim().length < 2) {
+      setCoordinatorResults([]);
+    }
+  };
+
+  const clearStudentSearch = () => {
+    setModalSearchTerm("");
+    setSearchResults([]);
+  };
+
+  const clearCoordinatorSearch = () => {
+    setCoordSearchTerm("");
+    setCoordinatorResults([]);
+  };
+
+  // 🧩 Fixed EnrollmentModal Component
   const EnrollmentModal = ({
-    title,
+    title = "", // ✅ Default value to prevent undefined error
     onSave,
     onCancel,
+    isEdit = false, // ✅ New prop to explicitly check if it's edit mode
   }: {
-    title: string;
+    title?: string;
     onSave: () => void;
     onCancel: () => void;
+    isEdit?: boolean;
   }) => (
     <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
-        <h2 className="text-xl font-bold">{title}</h2>
+      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold">
+          {title || (isEdit ? "Update Enrollment" : "Add New Enrollment")}
+        </h2>
 
         {/* Student search */}
-        <Input
-          placeholder="Search student..."
-          value={modalSearchTerm}
-          onChange={(e) => setModalSearchTerm(e.target.value)}
-          disabled={title.includes("Update")}
-        />
-        {searchResults.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search student..."
+            value={modalSearchTerm}
+            onChange={(e) => handleModalSearchChange(e.target.value)}
+            disabled={isEdit} // ✅ Use isEdit prop instead of title.includes()
+            className="pl-10 pr-10"
+          />
+          {modalSearchTerm && (
+            <button
+              onClick={clearStudentSearch}
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {searchLoading && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="animate-spin text-gray-500 h-5 w-5" />
+          </div>
+        )}
+
+        {!searchLoading && searchResults.length > 0 && (
           <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
             {searchResults.map((s) => (
               <div
@@ -231,23 +296,55 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, userId: s._id }))
                 }
-                className={`p-2 cursor-pointer rounded hover:bg-gray-100 ${
-                  formData.userId === s._id ? "bg-gray-200" : ""
+                className={`p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors ${
+                  formData.userId === s._id
+                    ? "bg-blue-50 border border-blue-200"
+                    : ""
                 }`}
               >
-                {s.firstName} {s.lastName} ({s.email})
+                <div className="font-medium">
+                  {s.firstName} {s.lastName}
+                </div>
+                <div className="text-sm text-gray-500">{s.email}</div>
               </div>
             ))}
           </div>
         )}
 
+        {!searchLoading &&
+          debouncedStudentSearch.trim().length >= 2 &&
+          searchResults.length === 0 && (
+            <p className="text-sm text-gray-500 text-center py-2">
+              No students found.
+            </p>
+          )}
+
         {/* Coordinator search */}
-        <Input
-          placeholder="Search coordinator..."
-          value={coordSearchTerm}
-          onChange={(e) => setCoordSearchTerm(e.target.value)}
-        />
-        {coordinatorResults.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search coordinator..."
+            value={coordSearchTerm}
+            onChange={(e) => handleCoordSearchChange(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {coordSearchTerm && (
+            <button
+              onClick={clearCoordinatorSearch}
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {coordSearchLoading && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="animate-spin text-gray-500 h-5 w-5" />
+          </div>
+        )}
+
+        {!coordSearchLoading && coordinatorResults.length > 0 && (
           <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
             {coordinatorResults.map((c) => (
               <div
@@ -255,17 +352,22 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, coordinatorId: c._id }))
                 }
-                className={`p-2 cursor-pointer rounded hover:bg-gray-100 ${
-                  formData.coordinatorId === c._id ? "bg-gray-200" : ""
+                className={`p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors ${
+                  formData.coordinatorId === c._id
+                    ? "bg-blue-50 border border-blue-200"
+                    : ""
                 }`}
               >
-                {c.firstName} {c.lastName} ({c.email})
+                <div className="font-medium">
+                  {c.firstName} {c.lastName}
+                </div>
+                <div className="text-sm text-gray-500">{c.email}</div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Company */}
+        {/* Company Select */}
         <Select
           value={formData.companyId}
           onValueChange={(val) =>
@@ -284,7 +386,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </SelectContent>
         </Select>
 
-        {/* Deployment date */}
+        {/* Deployment Date */}
         <Input
           type="date"
           value={formData.deploymentDate}
@@ -339,13 +441,16 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         <Card>
           <CardHeader>
             <CardTitle>All Enrollments</CardTitle>
-            <div className="flex gap-4">
-              <Input
-                placeholder="Search student..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-
+            <div className="flex gap-4 flex-col sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search student or company..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-48">
                   <Filter className="h-4 w-4 mr-2" />
@@ -419,6 +524,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               setShowModal(false);
               resetForm();
             }}
+            isEdit={false} // ✅ Explicitly set isEdit prop
           />
         )}
 
@@ -431,6 +537,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               setShowEditModal(false);
               resetForm();
             }}
+            isEdit={true} // ✅ Explicitly set isEdit prop
           />
         )}
       </div>

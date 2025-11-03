@@ -11,18 +11,18 @@ import { Input } from "@/components/atoms/input";
 import { Plus, Search } from "lucide-react";
 import CoordinatorCard from "@/components/templates/cards/coordinator.card";
 import { type PageProps } from "@/types/page.type";
-import { userService } from "@/services/user.service"; // your imported service
+import { userService } from "@/services/user.service";
 
 const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [coordinators, setCoordinators] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch coordinators from API
+  // 🔹 Fetch all coordinators initially
   const fetchCoordinators = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAll({ role: "coordinator" });
+      const response = await userService.search({ role: "coordinator" });
       setCoordinators(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Error fetching coordinators:", error);
@@ -31,17 +31,46 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
+  // 🔹 Handle dynamic search (calls BE)
+  const handleSearchCoordinator = async () => {
+    if (searchTerm.trim().length < 2) {
+      // If search is empty or too short, show all
+      fetchCoordinators();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const query = { role: "coordinator" };
+      const response = await userService.search(query);
+
+      // Filter results locally by name/email (like in student page)
+      const filtered = (Array.isArray(response) ? response : []).filter(
+        (c) =>
+          c.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      setCoordinators(filtered);
+    } catch (error) {
+      console.error("Error searching coordinators:", error);
+      setCoordinators([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Debounce search
+  useEffect(() => {
+    const timeout = setTimeout(() => handleSearchCoordinator(), 300);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
+
+  // 🔹 Initial load
   useEffect(() => {
     fetchCoordinators();
   }, []);
-
-  const filteredCoordinators = coordinators.filter(
-    (coordinator) =>
-      `${coordinator.firstName} ${coordinator.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      coordinator.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleEdit = (id: string) => {
     console.log("Edit coordinator:", id);
@@ -49,7 +78,6 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
 
   const handleDelete = (id: string) => {
     setCoordinators((prev) => prev.filter((c) => c._id !== id));
-    // Optional: call API to delete if endpoint exists
   };
 
   const handleAddCoordinator = () => {
@@ -87,11 +115,13 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
 
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
+              <div className="text-center py-8 text-gray-500">
+                Loading coordinators...
+              </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCoordinators.map((coordinator) => (
+                  {coordinators.map((coordinator) => (
                     <CoordinatorCard
                       key={coordinator._id}
                       coordinator={{
@@ -112,9 +142,9 @@ const Coordinators = ({ userRole, userName, onLogout }: PageProps) => {
                   ))}
                 </div>
 
-                {filteredCoordinators.length === 0 && (
+                {coordinators.length === 0 && !loading && (
                   <div className="text-center py-8 text-gray-500">
-                    No coordinators found matching your search.
+                    No coordinators found.
                   </div>
                 )}
               </>
