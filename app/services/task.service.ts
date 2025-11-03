@@ -3,6 +3,8 @@ import { api } from "../configuration/api.client.config";
 export const taskService = {
   getAll: (params?: Record<string, any>) =>
     api.getAll("/task", params ?? {}, { withAuth: true }),
+  student: (id: string, params?: Record<string, any>) =>
+    api.get(`/task/student/${id}`, params ?? {}, { withAuth: true }),
   get: (id: string, params?: Record<string, any>) =>
     api.get(`/task/${id}`, params ?? {}, { withAuth: true }),
   patch: (data: any) => api.patch(`/task`, data, { withAuth: true }),

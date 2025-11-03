@@ -35,11 +35,9 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const fetchMyTasks = async () => {
     try {
       setLoading(true);
-      const response = await taskService.getAll();
-      const myTasks = response.filter((t: Task) =>
-        t.assignedTo.some((s) => s._id === getAuth?.user?._id)
-      );
-      setTasks(myTasks);
+      const response = await taskService.student(getAuth?.user?._id);
+
+      setTasks(response);
     } catch (error) {
       console.error(error);
     } finally {
