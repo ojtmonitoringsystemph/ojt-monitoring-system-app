@@ -34,12 +34,12 @@ interface NavigationItem {
 }
 
 const navigation: NavigationItem[] = [
-  // {
-  //   name: "Dashboard",
-  //   href: "/",
-  //   icon: LayoutDashboard,
-  //   roles: ["admin", "coordinator", "student"],
-  // },
+  {
+    name: "Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+    roles: ["admin", "coordinator", "student"],
+  },
   // {
   //   name: "Account Management",
   //   href: "/accounts",
@@ -79,12 +79,12 @@ const navigation: NavigationItem[] = [
   //   roles: ["admin", "student"],
   // },
   { name: "Tasks", href: "/tasks", icon: CheckSquare, roles: ["coordinator"] },
-  {
-    name: "Submitted Tasks",
-    href: "/submitted-tasks",
-    icon: FileText,
-    roles: ["coordinator"],
-  },
+  // {
+  //   name: "Submitted Tasks",
+  //   href: "/submitted-tasks",
+  //   icon: FileText,
+  //   roles: ["coordinator"],
+  // },
   // {
   //   name: "Reports",
   //   href: "/reports",

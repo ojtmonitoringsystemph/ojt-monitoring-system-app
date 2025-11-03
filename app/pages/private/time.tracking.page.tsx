@@ -10,11 +10,7 @@ import { Button } from "@/components/atoms/button";
 import { Clock, Play, Pause } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 
-const TimeTracking: React.FC<PageProps> = ({
-  userRole,
-  userName,
-  onLogout,
-}) => {
+const TimeTracking = ({ userRole, userName, onLogout }: PageProps) => {
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
       <div className="p-6 space-y-6">

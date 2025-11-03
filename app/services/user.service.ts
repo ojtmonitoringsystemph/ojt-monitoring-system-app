@@ -1,6 +1,8 @@
 import { api } from "../configuration/api.client.config";
 
 export const userService = {
+  dashboard: (params?: Record<string, any>) =>
+    api.get("/user/dashboard", params ?? {}, { withAuth: true }),
   getAll: (params?: Record<string, any>) =>
     api.getAll("/user", params ?? {}, { withAuth: true }),
   get: (id: string, params?: Record<string, any>) =>

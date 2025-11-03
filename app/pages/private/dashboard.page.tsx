@@ -1,195 +1,241 @@
-import { Users, Building2, CheckSquare, Clock, TrendingUp } from "lucide-react";
-import StatsCard from "@/components/templates/cards/stats.card";
-import AnnouncementCard from "@/components/templates/cards/announcement.card";
-import StudentCard from "@/components/templates/cards/student.card";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+  Megaphone,
+  CheckSquare,
+  UserCircle,
+  Loader2,
+  Building2,
+  Users,
+} from "lucide-react";
+import StatsCard from "@/components/templates/cards/stats.card";
 import { Button } from "@/components/atoms/button";
+import { useEffect, useState } from "react";
+import { userService } from "~/app/services/user.service";
+import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 
 const Dashboard = () => {
-  // Mock data - in real app, this would come from your backend
-  const stats = [
-    {
-      title: "Total Students",
-      value: 156,
-      description: "Active internships",
-      icon: Users,
-      trend: "up" as const,
-      trendValue: "+12%",
-    },
-    {
-      title: "Partner Companies",
-      value: 24,
-      description: "Current partnerships",
-      icon: Building2,
-      trend: "up" as const,
-      trendValue: "+2",
-    },
-    {
-      title: "Pending Tasks",
-      value: 8,
-      description: "Require attention",
-      icon: CheckSquare,
-      trend: "down" as const,
-      trendValue: "-5",
-    },
-    {
-      title: "Avg. Completion",
-      value: "78%",
-      description: "Internship progress",
-      icon: TrendingUp,
-      trend: "up" as const,
-      trendValue: "+3%",
-    },
-  ];
+  const [loading, setLoading] = useState(false);
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [userRole, setUserRole] = useState(
+    getUserFromLocalStorage()?.user?.role || ""
+  );
 
-  const announcements = [
-    {
-      id: "1",
-      title: "New Documentation Requirements",
-      content:
-        "Starting next week, all students must submit weekly progress reports in addition to daily diary entries.",
-      author: "Dr. Sarah Johnson",
-      date: "2024-01-15",
-      priority: "high" as const,
-      type: "deadline" as const,
-    },
-    {
-      id: "2",
-      title: "Company Visit Schedule",
-      content:
-        "We will be conducting company visits for all active internship sites between Jan 20-25.",
-      author: "Prof. Michael Chen",
-      date: "2024-01-14",
-      priority: "medium" as const,
-      type: "general" as const,
-    },
-    {
-      id: "3",
-      title: "System Maintenance",
-      content:
-        "The internship tracking system will be undergoing maintenance on Saturday from 2-4 PM.",
-      author: "IT Support",
-      date: "2024-01-13",
-      priority: "low" as const,
-      type: "urgent" as const,
-    },
-  ];
+  const fetchMyDashboard = async () => {
+    try {
+      setLoading(true);
+      const currentUser = getUserFromLocalStorage()?.user;
+      if (!currentUser) return;
 
-  const recentStudents = [
-    {
-      id: "1",
-      name: "Alice Thompson",
-      program: "Computer Science",
-      company: "TechCorp Solutions",
-      deploymentDate: "2024-01-08",
-      internshipDuration: 480,
-      completedHours: 120,
-      totalHours: 480,
-      status: "active" as const,
-    },
-    {
-      id: "2",
-      name: "Bob Martinez",
-      program: "Information Technology",
-      company: "Digital Innovations Inc.",
-      deploymentDate: "2024-01-10",
-      internshipDuration: 480,
-      completedHours: 80,
-      totalHours: 480,
-      status: "active" as const,
-    },
-    {
-      id: "3",
-      name: "Carol Davis",
-      program: "Software Engineering",
-      company: "CloudTech Systems",
-      deploymentDate: "2024-01-05",
-      internshipDuration: 480,
-      completedHours: 180,
-      totalHours: 480,
-      status: "active" as const,
-    },
-  ];
+      const response = await userService.dashboard({
+        userId: currentUser._id || "",
+        userRole: currentUser.role || "",
+      });
+
+      setDashboard(response.dashboard);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userRole) {
+      fetchMyDashboard();
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updatedRole = getUserFromLocalStorage()?.user?.role || "";
+      if (updatedRole !== userRole) {
+        setUserRole(updatedRole);
+        fetchMyDashboard();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [userRole]);
+
+  // --- Separate stats based on role ---
+  const getStats = () => {
+    if (!dashboard) return [];
+
+    if (userRole === "admin") {
+      return [
+        {
+          title: "Total Students",
+          value: dashboard?.totalStudents || 0,
+          description: "All enrolled students",
+          icon: Users,
+          trend: "up" as const,
+          trendValue: "+3",
+        },
+        {
+          title: "BSIT Students",
+          value: dashboard?.bsitStudents || 0,
+          description: "Students enrolled in BSIT program",
+          icon: CheckSquare,
+          trend: "neutral" as const,
+          trendValue: "",
+        },
+        {
+          title: "BSBA Students",
+          value: dashboard?.bsbaStudents || 0,
+          description: "Students enrolled in BSBA program",
+          icon: CheckSquare,
+          trend: "neutral" as const,
+          trendValue: "",
+        },
+        {
+          title: "Total Coordinators",
+          value: dashboard?.totalCoordinators || 0,
+          description: "Active coordinators in the system",
+          icon: UserCircle,
+          trend: "up" as const,
+          trendValue: "+1",
+        },
+        {
+          title: "Total Companies",
+          value: dashboard?.totalCompanies || 0,
+          description: "Partnered companies for OJT",
+          icon: Building2,
+          trend: "up" as const,
+          trendValue: "+2",
+        },
+      ];
+    }
+
+    if (userRole === "coordinator") {
+      return [
+        {
+          title: "Total Announcements",
+          value: dashboard?.totalAnnouncements || 0,
+          description: "Total announcements created",
+          icon: Megaphone,
+          trend: "up" as const,
+          trendValue: "+1",
+        },
+        {
+          title: "Total Students Handled",
+          value: dashboard?.totalStudentsHandled || 0,
+          description: "Students under your coordination",
+          icon: Users,
+          trend: "neutral" as const,
+          trendValue: "",
+        },
+        {
+          title: "Companies with Students",
+          value: dashboard?.companiesWithStudents || 0,
+          description: "Partnered companies with active students",
+          icon: Building2,
+          trend: "up" as const,
+          trendValue: "+2",
+        },
+      ];
+    }
+
+    if (userRole === "student") {
+      return [
+        {
+          title: "Total Announcements",
+          value: dashboard?.totalAnnouncements || 0,
+          description: "Latest posted updates",
+          icon: Megaphone,
+          trend: "up" as const,
+          trendValue: "+1",
+        },
+        {
+          title: "Total Tasks",
+          value: dashboard?.totalTasks || 0,
+          description: "Tasks assigned to you",
+          icon: CheckSquare,
+          trend: "neutral" as const,
+          trendValue: "",
+        },
+        {
+          title: "User Role",
+          value:
+            dashboard.userRole.charAt(0).toUpperCase() +
+            dashboard.userRole.slice(1),
+          description: "Current access level",
+          icon: UserCircle,
+          trend: "neutral" as const,
+          trendValue: "",
+        },
+      ];
+    }
+
+    // Default fallback
+    return [
+      {
+        title: "User Role",
+        value: dashboard?.userRole || "N/A",
+        description: "Current access level",
+        icon: UserCircle,
+        trend: "neutral" as const,
+        trendValue: "",
+      },
+    ];
+  };
+
+  const stats = getStats();
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your internships.
+            Welcome back! Here’s an overview of your activities.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">Export Report</Button>
-          <Button>Add Student</Button>
+          <Button onClick={fetchMyDashboard} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              "Refresh Data"
+            )}
+          </Button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <StatsCard
-            key={index}
-            title={stat.title}
-            value={stat.value}
-            description={stat.description}
-            icon={stat.icon}
-            trend={stat.trend}
-            trendValue={stat.trendValue}
-            className="animate-slide-up"
-            style={{ animationDelay: `${index * 0.1}s` }}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Students */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Recent Deployments</CardTitle>
-                <Button variant="ghost" size="sm">
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentStudents.map((student) => (
-                <StudentCard key={student.id} student={student} />
-              ))}
-            </CardContent>
-          </Card>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />
+          ))}
         </div>
-
-        {/* Announcements */}
-        <div>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Announcements</CardTitle>
-                <Button variant="ghost" size="sm">
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {announcements.map((announcement) => (
-                <AnnouncementCard
-                  key={announcement.id}
-                  announcement={announcement}
-                />
-              ))}
-            </CardContent>
-          </Card>
+      ) : (
+        <div
+          className={`grid gap-6 ${
+            userRole === "admin"
+              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
+          {stats.map((stat, index) => (
+            <StatsCard
+              key={index}
+              title={stat.title}
+              value={stat.value}
+              description={stat.description}
+              icon={stat.icon}
+              trend={stat.trend}
+              trendValue={stat.trendValue}
+              className="animate-slide-up"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            />
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 };

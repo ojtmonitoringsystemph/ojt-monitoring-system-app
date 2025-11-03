@@ -5,6 +5,8 @@ export const documentService = {
     api.getAll("/document", params ?? {}, { withAuth: true }),
   get: (id: string, params?: Record<string, any>) =>
     api.get(`/document/${id}`, params ?? {}, { withAuth: true }),
+  student: (id: string, params?: Record<string, any>) =>
+    api.get(`/document/student/${id}`, params ?? {}, { withAuth: true }),
   patch: (id: string, data: any) =>
     api.patch(`/document/${id}`, data, { withAuth: true }),
   create: (data: any) => api.post("/document", data, { withAuth: true }),

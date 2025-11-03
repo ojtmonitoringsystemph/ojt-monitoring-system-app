@@ -29,7 +29,9 @@ const Documents: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   // Fetch documents on mount
   const fetchDocuments = async () => {
     try {
-      const res = await documentService.getAll();
+      const res = await documentService.student(
+        getUserFromLocalStorage()?.user?._id || ""
+      );
       setDocuments(res.data || []);
     } catch (err) {
       console.error("Failed to fetch documents:", err);

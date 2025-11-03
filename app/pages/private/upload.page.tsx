@@ -1,6 +1,7 @@
 import React, {
   useState,
   useEffect,
+  useRef,
   type ChangeEvent,
   type DragEvent,
 } from "react";
@@ -12,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
-import { Upload as UploadIcon, FileText, Image } from "lucide-react";
+import { Upload as UploadIcon, FileText } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { documentService } from "~/app/services/document.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
@@ -25,15 +26,18 @@ interface Document {
 }
 
 const Upload = ({ userRole, userName, onLogout }: PageProps) => {
-  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [documentsList, setDocumentsList] = useState<Document[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Fetch existing uploaded files
+  // Reference to hidden file input
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const fetchDocuments = async () => {
     try {
-      const res = await documentService.getAll();
+      const res = await documentService.student(
+        getUserFromLocalStorage()?.user?._id || ""
+      );
       setDocumentsList(res || []);
     } catch (err) {
       console.error("Failed to fetch documents:", err);
@@ -44,42 +48,34 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
     fetchDocuments();
   }, []);
 
-  // Handle file selection from file dialog
-  const handleFileChange = (
-    e: ChangeEvent<HTMLInputElement>,
-    type: "documents" | "images"
-  ) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const filesArray = Array.from(e.target.files);
-    if (type === "documents")
-      setDocumentFiles((prev) => [...prev, ...filesArray]);
-    else setImageFiles((prev) => [...prev, ...filesArray]);
+    setSelectedFiles((prev) => [...prev, ...filesArray]);
   };
 
-  // Handle drag-and-drop
-  const handleDrop = (
-    e: DragEvent<HTMLDivElement>,
-    type: "documents" | "images"
-  ) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
-    if (type === "documents") setDocumentFiles((prev) => [...prev, ...files]);
-    else setImageFiles((prev) => [...prev, ...files]);
+    setSelectedFiles((prev) => [...prev, ...files]);
   };
 
-  // Upload files to backend
-  const handleUpload = async (type: "documents" | "images") => {
-    const files = type === "documents" ? documentFiles : imageFiles;
-    if (!files.length) return;
+  const handleBrowseClick = () => {
+    // Manually trigger file input
+    fileInputRef.current?.click();
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFiles.length) return;
 
     const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
+    selectedFiles.forEach((file) => formData.append("files", file));
     formData.append("student", getUserFromLocalStorage()?.user?._id || "");
 
     setUploading(true);
     try {
       await documentService.create(formData);
-      type === "documents" ? setDocumentFiles([]) : setImageFiles([]);
+      setSelectedFiles([]);
       fetchDocuments();
       alert("Files uploaded successfully!");
     } catch (err) {
@@ -89,61 +85,6 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
       setUploading(false);
     }
   };
-
-  // Render upload card (documents/images)
-  const renderUploadCard = (
-    title: string,
-    files: File[],
-    type: "documents" | "images",
-    Icon: React.FC<any>
-  ) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icon className="h-5 w-5" /> {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div
-          onDrop={(e) => handleDrop(e, type)}
-          onDragOver={(e) => e.preventDefault()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition"
-        >
-          <Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">
-            Drop {title.toLowerCase()} here or click to browse
-          </p>
-
-          {/* Hidden input triggered by label */}
-          <input
-            type="file"
-            id={`${type}-input`}
-            multiple
-            onChange={(e) => handleFileChange(e, type)}
-            className="hidden"
-          />
-          <label htmlFor={`${type}-input`} className="cursor-pointer">
-            <Button disabled={uploading}>Choose Files</Button>
-          </label>
-
-          {/* Show selected files */}
-          {files.length > 0 && (
-            <div className="mt-2 text-sm text-muted-foreground">
-              {files.map((f) => f.name).join(", ")}
-            </div>
-          )}
-
-          <Button
-            className="mt-3"
-            onClick={() => handleUpload(type)}
-            disabled={uploading || files.length === 0}
-          >
-            {uploading ? "Uploading..." : `Upload ${title}`}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
@@ -155,17 +96,58 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
               Upload Documents
             </h1>
             <p className="text-muted-foreground">
-              Upload required documents and images
+              Upload your files — drag and drop or browse manually
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {renderUploadCard("Documents", documentFiles, "documents", FileText)}
-          {renderUploadCard("Images", imageFiles, "images", Image)}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UploadIcon className="h-5 w-5" /> File Upload
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition"
+            >
+              <UploadIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                Drop files here or click below to browse
+              </p>
 
-        {/* Display uploaded files */}
+              {/* Hidden input triggered by button */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              <Button onClick={handleBrowseClick} disabled={uploading}>
+                Browse Files
+              </Button>
+
+              {selectedFiles.length > 0 && (
+                <div className="mt-3 text-sm text-muted-foreground">
+                  {selectedFiles.map((f) => f.name).join(", ")}
+                </div>
+              )}
+
+              <Button
+                className="mt-4"
+                onClick={handleUpload}
+                disabled={uploading || selectedFiles.length === 0}
+              >
+                {uploading ? "Uploading..." : "Upload Files"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Uploaded Files</CardTitle>

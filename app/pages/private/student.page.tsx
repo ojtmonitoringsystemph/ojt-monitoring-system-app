@@ -53,14 +53,16 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     status: "scheduled",
   });
 
-  // Fetch students
+  // Fetch all students
   const fetchStudents = async () => {
     setLoading(true);
     try {
       const response = await userService.getAll({ role: "student" });
-      setStudents(Array.isArray(response) ? response : []);
+      if (Array.isArray(response)) setStudents(response);
+      else setStudents([]);
     } catch (error) {
       console.error("Error fetching students:", error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -81,23 +83,34 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     fetchCompanies();
   }, []);
 
-  // Search students for modal
+  // Search students for modal (uses BE /user/search)
   const handleSearchStudent = async () => {
-    const filtered = students.filter(
-      (s) =>
-        !s.metadata?.company &&
-        `${s.firstName} ${s.lastName}`
-          .toLowerCase()
-          .includes(modalSearchTerm.toLowerCase())
-    );
-    setSearchResults(filtered);
+    if (modalSearchTerm.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const query = { role: "student" };
+      const response = await userService.search(query);
+
+      const filtered = (Array.isArray(response) ? response : []).filter(
+        (s: Student) =>
+          !s.metadata?.company &&
+          (s.firstName.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+            s.lastName.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+            s.email.toLowerCase().includes(modalSearchTerm.toLowerCase()))
+      );
+
+      setSearchResults(filtered);
+    } catch (error) {
+      console.error("Error searching students:", error);
+      setSearchResults([]);
+    }
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (modalSearchTerm.trim().length > 1) handleSearchStudent();
-      else setSearchResults([]);
-    }, 300);
+    const timeout = setTimeout(() => handleSearchStudent(), 300);
     return () => clearTimeout(timeout);
   }, [modalSearchTerm]);
 
@@ -125,18 +138,22 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       setSearchResults([]);
       setModalSearchTerm("");
     } catch (error) {
-      console.error(error);
+      console.error("Failed to assign student:", error);
       alert("Failed to assign student.");
     }
   };
 
-  const filteredStudents = students.filter(
-    (student) =>
-      `${student.firstName} ${student.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) &&
-      student.metadata?.coordinator?._id === getAuth?.user?._id
-  );
+  // Filter visible students (only coordinator’s if coordinator)
+  const filteredStudents = students.filter((student) => {
+    const matchSearch = `${student.firstName} ${student.lastName}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchCoordinator =
+      getAuth?.user?.role === "coordinator"
+        ? student.metadata?.coordinator?._id === getAuth?.user?._id
+        : true;
+    return matchSearch && matchCoordinator;
+  });
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
@@ -158,8 +175,8 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             <CardTitle>
               {userRole === "coordinator" ? "My Students" : "All Students"}
             </CardTitle>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search students..."
                 value={searchTerm}
@@ -168,6 +185,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               />
             </div>
           </CardHeader>
+
           <CardContent>
             {loading ? (
               <div className="text-center py-8">Loading students...</div>
@@ -186,7 +204,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     {filteredStudents.map((student) => (
                       <tr
                         key={student._id}
-                        className="border-b hover:bg-accent/50"
+                        className="border-b hover:bg-gray-50"
                       >
                         <td className="p-3 font-medium">
                           {student.firstName} {student.lastName}
@@ -201,7 +219,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                   </tbody>
                 </table>
                 {filteredStudents.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-gray-500">
                     No students found.
                   </div>
                 )}
@@ -221,6 +239,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 value={modalSearchTerm}
                 onChange={(e) => setModalSearchTerm(e.target.value)}
               />
+
               {searchResults.length > 0 && (
                 <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
                   {searchResults.map((s) => (

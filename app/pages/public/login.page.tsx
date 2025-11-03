@@ -31,15 +31,16 @@ const Login = ({ onLogin }: LoginProps) => {
       localStorage.setItem("auth", JSON.stringify(response.data));
       localStorage.setItem("role", response.data?.user?.role);
       onLogin?.(role);
-      navigate("/");
+      setTimeout(() => {
+        navigate("/");
+        setLoading(false);
+      }, 2000);
     } catch (err: any) {
       console.error("Login failed:", err);
       setError(
         err.response?.data?.message ||
           "Invalid credentials or network error. Please try again."
       );
-    } finally {
-      setLoading(false);
     }
   };
 
