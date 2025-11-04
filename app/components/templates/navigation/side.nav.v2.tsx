@@ -78,7 +78,12 @@ const navigation: NavigationItem[] = [
   //   icon: Archive,
   //   roles: ["admin", "student"],
   // },
-  { name: "Tasks", href: "/tasks", icon: CheckSquare, roles: ["coordinator"] },
+  {
+    name: "Tasks",
+    href: "/tasks",
+    icon: CheckSquare,
+    roles: ["coordinator", "admin"],
+  },
   // {
   //   name: "Submitted Tasks",
   //   href: "/submitted-tasks",
