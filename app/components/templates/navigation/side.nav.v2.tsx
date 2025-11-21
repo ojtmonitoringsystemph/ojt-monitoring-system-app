@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router"; // ✅ FIXED
+import { Link, useLocation } from "react-router";
 import {
   LayoutDashboard,
   Users,
@@ -7,18 +7,11 @@ import {
   FileText,
   CheckSquare,
   Upload,
-  Archive,
-  Megaphone,
-  UserCog,
   BookOpen,
-  Clock,
   MessageSquare,
-  BarChart3,
   ChevronDown,
-  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "~/app/hooks/use.auth";
 
 interface SubItem {
   name: string;
@@ -40,12 +33,6 @@ const navigation: NavigationItem[] = [
     icon: LayoutDashboard,
     roles: ["admin", "coordinator", "student"],
   },
-  // {
-  //   name: "Account Management",
-  //   href: "/accounts",
-  //   icon: UserCog,
-  //   roles: ["admin"],
-  // },
   {
     name: "Students",
     href: "/students",
@@ -61,42 +48,23 @@ const navigation: NavigationItem[] = [
   { name: "Companies", href: "/companies", icon: Building2, roles: ["admin"] },
   { name: "Enrollment", href: "/enrollment", icon: FileText, roles: ["admin"] },
   {
+    name: "Program Requirements",
+    href: "/program-requirements",
+    icon: BookOpen,
+    roles: ["admin"],
+  },
+  {
     name: "Messages",
     href: "/messages",
     icon: MessageSquare,
     roles: ["admin", "coordinator", "student"],
   },
-  // {
-  //   name: "Announcements",
-  //   href: "/announcements",
-  //   icon: Megaphone,
-  //   roles: ["admin"],
-  // },
-  // {
-  //   name: "Archives",
-  //   href: "/archives",
-  //   icon: Archive,
-  //   roles: ["admin", "student"],
-  // },
   {
     name: "Tasks",
     href: "/tasks",
     icon: CheckSquare,
     roles: ["coordinator", "admin"],
   },
-  // {
-  //   name: "Submitted Tasks",
-  //   href: "/submitted-tasks",
-  //   icon: FileText,
-  //   roles: ["coordinator"],
-  // },
-  // {
-  //   name: "Reports",
-  //   href: "/reports",
-  //   icon: BarChart3,
-  //   roles: ["coordinator"],
-  // },
-  // { name: "Daily Diary", href: "/diary", icon: BookOpen, roles: ["student"] },
   {
     name: "Documents",
     href: "/documents",
@@ -124,153 +92,130 @@ interface AppSidebarProps {
 
 export default function SidebarV2({ isOpen, setIsOpen }: AppSidebarProps) {
   const location = useLocation();
-
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<"admin" | "coordinator" | "student">(
     "student"
   );
 
-  // ✅ Load role from localStorage on mount
   useEffect(() => {
     const savedRole = localStorage.getItem("role") as
       | "admin"
       | "coordinator"
       | "student"
       | null;
-    if (savedRole) {
-      setUserRole(savedRole);
-    }
+    if (savedRole) setUserRole(savedRole);
   }, []);
 
-  // ✅ Filter menu items by role
   const roleNavigation = navigation.filter((item) =>
     item.roles?.includes(userRole)
   );
 
-  useEffect(() => {
-    const activeItem = roleNavigation.find((item) => {
-      if (item.subItems) {
-        return item.subItems.some((sub) =>
-          location.pathname.startsWith(sub.href)
-        );
-      }
-      return item.href === location.pathname;
-    });
-
-    if (activeItem?.subItems) {
-      setExpandedItems([activeItem.name]);
-    }
-  }, [location.pathname, roleNavigation]);
-
   const toggleItem = (name: string) => {
     setExpandedItems((prev) =>
-      prev.includes(name)
-        ? prev.filter((item) => item !== name)
-        : [...prev, name]
+      prev.includes(name) ? prev.filter((i) => i !== name) : [...prev, name]
     );
   };
 
   return (
-    <div
-      className={cn(
-        "fixed inset-y-0 left-0 z-10 w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}
-    >
-      <div className="flex h-16 items-center justify-between px-4">
-        <h1 className="text-lg font-semibold capitalize">{userRole} Menu</h1>
-      </div>
-      <nav className="flex-1 space-y-1 px-2 py-4">
-        {roleNavigation.map((item) => {
-          const isActive = location.pathname === item.href;
-          const hasSubItems = item.subItems !== undefined;
-          const isExpanded = expandedItems.includes(item.name);
-          const isSubActive = item.subItems?.some((sub) =>
-            location.pathname.startsWith(sub.href)
-          );
+    <>
+      {/* Mobile overlay */}
+      <div
+        className={cn(
+          "fixed inset-0 z-20 bg-black/40 backdrop-blur-sm transition-opacity sm:hidden",
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setIsOpen(false)}
+      />
 
-          return (
-            <div key={item.name}>
-              {hasSubItems ? (
-                <button
-                  onClick={() => toggleItem(item.name)}
-                  className={cn(
-                    "flex w-full items-center px-2 py-2 text-sm font-medium rounded-md",
-                    isSubActive
-                      ? "bg-blue-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      "mr-3 h-5 w-5",
-                      isSubActive ? "text-gray-500" : "text-gray-400"
-                    )}
-                  />
-                  {item.name}
-                  <ChevronDown
-                    className={cn(
-                      "ml-auto h-4 w-4 transition-transform",
-                      isExpanded ? "rotate-180" : ""
-                    )}
-                  />
-                </button>
-              ) : (
-                <Link
-                  to={item.href!}
-                  className={cn(
-                    "flex items-center px-2 py-2 text-sm font-medium rounded-md",
-                    isActive
-                      ? "bg-primary-800 text-blue-500 hover:bg-primary-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <item.icon
-                    className={cn(
-                      "mr-3 h-5 w-5",
-                      isActive ? "text-blue-500" : "text-gray-400"
-                    )}
-                  />
-                  {item.name}
-                </Link>
-              )}
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex h-16 items-center justify-between px-4 border-b">
+          <h1 className="text-lg font-semibold capitalize">{userRole} Menu</h1>
+          <button className="sm:hidden p-2" onClick={() => setIsOpen(false)}>
+            ✕
+          </button>
+        </div>
 
-              {hasSubItems && isExpanded && item.subItems && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {item.subItems.map((subItem) => {
-                    const isSubActive = location.pathname === subItem.href;
-                    return (
-                      <Link
-                        key={subItem.name}
-                        to={subItem.href}
-                        className={cn(
-                          "flex items-center px-2 py-2 text-sm font-medium rounded-md",
-                          isSubActive
-                            ? "bg-gray-100 text-gray-900"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        )}
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {subItem.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
-      {/* <div className="border-t p-4">
-        <button
-          className="flex w-full items-center px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md"
-          onClick={() => logout()}
-        >
-          <LogOut className="mr-3 h-5 w-5 text-gray-400" />
-          Logout
-        </button>
-      </div> */}
-    </div>
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+          {roleNavigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            const hasSubItems = !!item.subItems;
+            const isExpanded = expandedItems.includes(item.name);
+            const isSubActive = item.subItems?.some((sub) =>
+              location.pathname.startsWith(sub.href)
+            );
+
+            return (
+              <div key={item.name}>
+                {hasSubItems ? (
+                  <button
+                    onClick={() => toggleItem(item.name)}
+                    className={cn(
+                      "flex w-full items-center px-2 py-2 text-sm font-medium rounded-md",
+                      isSubActive
+                        ? "bg-blue-100 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    )}
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                    <ChevronDown
+                      className={cn(
+                        "ml-auto h-4 w-4 transition-transform",
+                        isExpanded ? "rotate-180" : ""
+                      )}
+                    />
+                  </button>
+                ) : (
+                  <Link
+                    to={item.href!}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center px-2 py-2 text-sm font-medium rounded-md",
+                      isActive
+                        ? "bg-primary-800 text-blue-500"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    )}
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                )}
+
+                {hasSubItems && isExpanded && item.subItems && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {item.subItems.map((subItem) => {
+                      const isSubActive = location.pathname === subItem.href;
+                      return (
+                        <Link
+                          key={subItem.name}
+                          to={subItem.href}
+                          className={cn(
+                            "flex items-center px-2 py-2 text-sm font-medium rounded-md",
+                            isSubActive
+                              ? "bg-gray-100 text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          )}
+                          onClick={() => setIsOpen(false)}
+                        >
+                          {subItem.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

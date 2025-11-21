@@ -125,20 +125,20 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 bg-white">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Building2 className="h-8 w-8 text-primary" />
+            <Building2 className="h-8 w-8 text-green-600" />
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Companies</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-3xl font-bold text-green-700">Companies</h1>
+              <p className="text-green-600">
                 Manage partner companies and internship opportunities
               </p>
             </div>
           </div>
           <Button
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
             onClick={() => {
               setEditingCompany(null);
               setShowForm(true);
@@ -151,11 +151,11 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
 
         {/* Company List */}
         {loading ? (
-          <p className="text-muted-foreground">Loading companies...</p>
+          <p className="text-green-600">Loading companies...</p>
         ) : error ? (
           <p className="text-red-500">{error}</p>
         ) : companies.length === 0 ? (
-          <p className="text-muted-foreground">No companies found.</p>
+          <p className="text-green-600">No companies found.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {companies.map((company) => (
@@ -173,10 +173,10 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
                 />
                 <button
                   onClick={() => handleEdit(company)}
-                  className="absolute top-2 right-2 p-2 bg-white border rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-2 right-2 p-2 bg-white border border-green-200 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition"
                   title="Edit Company"
                 >
-                  <Pencil className="h-4 w-4 text-gray-700" />
+                  <Pencil className="h-4 w-4 text-green-700" />
                 </button>
               </div>
             ))}
@@ -185,9 +185,9 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black/20 bg-opacity-40 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4">
-              <h2 className="text-xl font-bold">
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 border border-green-200">
+              <h2 className="text-xl font-bold text-green-700">
                 {editingCompany ? "Edit Company" : "Add New Company"}
               </h2>
 
@@ -196,49 +196,56 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
                 placeholder="Company Name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full border p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
               />
               <input
                 name="address"
                 placeholder="Address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full border p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
               />
               <textarea
                 name="description"
                 placeholder="Description"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full border p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
               />
               <input
                 name="contactPerson"
                 placeholder="Contact Person"
                 value={formData.contactPerson}
                 onChange={handleChange}
-                className="w-full border p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
               />
               <input
                 name="contactEmail"
                 placeholder="Contact Email"
                 value={formData.contactEmail}
                 onChange={handleChange}
-                className="w-full border p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
               />
               <input
                 name="contactPhone"
                 placeholder="Contact Phone"
                 value={formData.contactPhone}
                 onChange={handleChange}
-                className="w-full border p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
               />
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={handleCancel}>
+                <Button
+                  variant="outline"
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                  onClick={handleCancel}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleSave}>
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleSave}
+                >
                   {editingCompany ? "Update" : "Save"}
                 </Button>
               </div>

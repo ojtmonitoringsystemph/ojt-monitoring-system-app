@@ -182,18 +182,27 @@ const Dashboard = () => {
   const stats = getStats();
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-6 space-y-6 animate-fade-in bg-white">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-green-700">Dashboard</h1>
+          <p className="text-green-600">
             Welcome back! Here’s an overview of your activities.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Export Report</Button>
-          <Button onClick={fetchMyDashboard} disabled={loading}>
+          <Button
+            variant="outline"
+            className="border-green-600 text-green-600 hover:bg-green-50"
+          >
+            Export Report
+          </Button>
+          <Button
+            onClick={fetchMyDashboard}
+            disabled={loading}
+            className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+          >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -210,7 +219,10 @@ const Dashboard = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />
+            <div
+              key={i}
+              className="h-32 bg-green-50 rounded-lg animate-pulse"
+            />
           ))}
         </div>
       ) : (

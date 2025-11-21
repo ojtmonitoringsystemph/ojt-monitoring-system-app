@@ -246,10 +246,10 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
   // 🧩 Fixed EnrollmentModal Component
   const EnrollmentModal = ({
-    title = "", // ✅ Default value to prevent undefined error
+    title = "",
     onSave,
     onCancel,
-    isEdit = false, // ✅ New prop to explicitly check if it's edit mode
+    isEdit = false,
   }: {
     title?: string;
     onSave: () => void;
@@ -258,24 +258,24 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   }) => (
     <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
       <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold">
+        <h2 className="text-xl font-bold text-green-700">
           {title || (isEdit ? "Update Enrollment" : "Add New Enrollment")}
         </h2>
 
-        {/* Student search */}
+        {/* Student Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-green-400" />
           <Input
             placeholder="Search student..."
             value={modalSearchTerm}
             onChange={(e) => handleModalSearchChange(e.target.value)}
-            disabled={isEdit} // ✅ Use isEdit prop instead of title.includes()
-            className="pl-10 pr-10"
+            disabled={isEdit}
+            className="pl-10 pr-10 border-green-300 focus:border-green-500"
           />
           {modalSearchTerm && (
             <button
               onClick={clearStudentSearch}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-3 text-green-400 hover:text-green-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -284,54 +284,46 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
         {searchLoading && (
           <div className="flex justify-center py-2">
-            <Loader2 className="animate-spin text-gray-500 h-5 w-5" />
+            <Loader2 className="animate-spin text-green-500 h-5 w-5" />
           </div>
         )}
 
         {!searchLoading && searchResults.length > 0 && (
-          <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
+          <div className="border border-green-200 rounded-md p-2 max-h-40 overflow-y-auto">
             {searchResults.map((s) => (
               <div
                 key={s._id}
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, userId: s._id }))
                 }
-                className={`p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors ${
+                className={`p-2 cursor-pointer rounded hover:bg-green-50 transition-colors ${
                   formData.userId === s._id
-                    ? "bg-blue-50 border border-blue-200"
+                    ? "bg-green-50 border border-green-300"
                     : ""
                 }`}
               >
                 <div className="font-medium">
                   {s.firstName} {s.lastName}
                 </div>
-                <div className="text-sm text-gray-500">{s.email}</div>
+                <div className="text-sm text-green-600">{s.email}</div>
               </div>
             ))}
           </div>
         )}
 
-        {!searchLoading &&
-          debouncedStudentSearch.trim().length >= 2 &&
-          searchResults.length === 0 && (
-            <p className="text-sm text-gray-500 text-center py-2">
-              No students found.
-            </p>
-          )}
-
-        {/* Coordinator search */}
+        {/* Coordinator Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-green-400" />
           <Input
             placeholder="Search coordinator..."
             value={coordSearchTerm}
             onChange={(e) => handleCoordSearchChange(e.target.value)}
-            className="pl-10 pr-10"
+            className="pl-10 pr-10 border-green-300 focus:border-green-500"
           />
           {coordSearchTerm && (
             <button
               onClick={clearCoordinatorSearch}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-3 text-green-400 hover:text-green-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -340,28 +332,28 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
         {coordSearchLoading && (
           <div className="flex justify-center py-2">
-            <Loader2 className="animate-spin text-gray-500 h-5 w-5" />
+            <Loader2 className="animate-spin text-green-500 h-5 w-5" />
           </div>
         )}
 
         {!coordSearchLoading && coordinatorResults.length > 0 && (
-          <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
+          <div className="border border-green-200 rounded-md p-2 max-h-40 overflow-y-auto">
             {coordinatorResults.map((c) => (
               <div
                 key={c._id}
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, coordinatorId: c._id }))
                 }
-                className={`p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors ${
+                className={`p-2 cursor-pointer rounded hover:bg-green-50 transition-colors ${
                   formData.coordinatorId === c._id
-                    ? "bg-blue-50 border border-blue-200"
+                    ? "bg-green-50 border border-green-300"
                     : ""
                 }`}
               >
                 <div className="font-medium">
                   {c.firstName} {c.lastName}
                 </div>
-                <div className="text-sm text-gray-500">{c.email}</div>
+                <div className="text-sm text-green-600">{c.email}</div>
               </div>
             ))}
           </div>
@@ -374,7 +366,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             setFormData((prev) => ({ ...prev, companyId: val }))
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="border-green-300 focus:border-green-500">
             <SelectValue placeholder="Select company" />
           </SelectTrigger>
           <SelectContent>
@@ -393,6 +385,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, deploymentDate: e.target.value }))
           }
+          className="border-green-300 focus:border-green-500"
         />
 
         {/* Status */}
@@ -402,7 +395,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             setFormData((prev) => ({ ...prev, status: val }))
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="border-green-300 focus:border-green-500">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
@@ -413,10 +406,19 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         </Select>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="outline" onClick={onCancel}>
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="border-green-500 text-green-700 hover:bg-green-50"
+          >
             Cancel
           </Button>
-          <Button onClick={onSave}>Save</Button>
+          <Button
+            className="bg-green-600 text-white hover:bg-green-700"
+            onClick={onSave}
+          >
+            Save
+          </Button>
         </div>
       </div>
     </div>
@@ -424,14 +426,14 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 bg-white">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-green-700">
             Student Enrollment
           </h1>
           <Button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
           >
             <Plus className="h-4 w-4" /> New Enrollment
           </Button>
@@ -440,20 +442,20 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         {/* Search + Filter */}
         <Card>
           <CardHeader>
-            <CardTitle>All Enrollments</CardTitle>
+            <CardTitle className="text-green-700">All Enrollments</CardTitle>
             <div className="flex gap-4 flex-col sm:flex-row">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-green-400" />
                 <Input
                   placeholder="Search student or company..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-green-300 focus:border-green-500"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
-                  <Filter className="h-4 w-4 mr-2" />
+                <SelectTrigger className="w-48 border-green-300 focus:border-green-500">
+                  <Filter className="h-4 w-4 mr-2 text-green-600" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -508,7 +510,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             </div>
 
             {!loading && filteredStudents.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-green-600">
                 No enrolled students found.
               </div>
             )}
@@ -524,7 +526,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               setShowModal(false);
               resetForm();
             }}
-            isEdit={false} // ✅ Explicitly set isEdit prop
+            isEdit={false}
           />
         )}
 
@@ -537,7 +539,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               setShowEditModal(false);
               resetForm();
             }}
-            isEdit={true} // ✅ Explicitly set isEdit prop
+            isEdit={true}
           />
         )}
       </div>

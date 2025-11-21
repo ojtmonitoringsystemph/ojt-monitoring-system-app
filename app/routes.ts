@@ -29,6 +29,7 @@ export const routes: RouteConfig = [
     route("/history", "./pages/private/history.page.tsx"),
     route("/profile", "./pages/private/profile.page.tsx"),
     route("/documents", "./pages/private/documents.page.tsx"),
+    route("/program-requirements", "./pages/private/requirements.page.tsx"),
   ]),
   // layout("./components/templates/layout/_main.interview.layout.tsx", [
   //   route("counter/interview", "./routes/admin.counter.interview.tsx"),

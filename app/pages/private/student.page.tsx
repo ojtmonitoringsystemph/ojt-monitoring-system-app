@@ -189,12 +189,13 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
       <div className="p-6 space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold text-green-800">
             {userRole === "coordinator" ? "My Students" : "Students"}
           </h1>
           <Button
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
             onClick={() => {
               setShowModal(true);
               setIsEditing(false);
@@ -204,56 +205,70 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </Button>
         </div>
 
-        <Card>
+        {/* Students Table */}
+        <Card className="border-green-300 shadow-lg">
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="text-green-800">
               {userRole === "coordinator" ? "My Students" : "All Students"}
             </CardTitle>
             <div className="relative mt-2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 h-4 w-4" />
               <Input
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-green-300 focus:ring-green-500 focus:border-green-500"
               />
             </div>
           </CardHeader>
-
           <CardContent>
             {loading ? (
-              <div className="text-center py-8">Loading students...</div>
+              <div className="text-center py-8 text-green-600">
+                Loading students...
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Full Name</th>
-                      <th className="text-left p-3 font-medium">Email</th>
-                      <th className="text-left p-3 font-medium">Program</th>
-                      <th className="text-left p-3 font-medium">Company</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+                    <tr className="border-b border-green-300">
+                      <th className="text-left p-3 font-medium text-green-700">
+                        Full Name
+                      </th>
+                      <th className="text-left p-3 font-medium text-green-700">
+                        Email
+                      </th>
+                      <th className="text-left p-3 font-medium text-green-700">
+                        Program
+                      </th>
+                      <th className="text-left p-3 font-medium text-green-700">
+                        Company
+                      </th>
+                      <th className="text-left p-3 font-medium text-green-700">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map((student) => (
                       <tr
                         key={student._id}
-                        className="border-b hover:bg-gray-50"
+                        className="border-b border-green-200 hover:bg-green-50"
                       >
-                        <td className="p-3 font-medium">
+                        <td className="p-3 font-medium text-green-800">
                           {student.firstName} {student.lastName}
                         </td>
-                        <td className="p-3">{student.email}</td>
-                        <td className="p-3">{student.program ?? "-"}</td>
-                        <td className="p-3">
+                        <td className="p-3 text-green-700">{student.email}</td>
+                        <td className="p-3 text-green-700">
+                          {student.program ?? "-"}
+                        </td>
+                        <td className="p-3 text-green-700">
                           {student.metadata?.company?.name ?? "-"}
                         </td>
                         <td className="p-3">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 border-green-500 text-green-600 hover:bg-green-100"
                             onClick={() => handleEditStudent(student)}
                           >
                             <Edit className="h-4 w-4" /> Edit
@@ -264,7 +279,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                   </tbody>
                 </table>
                 {students.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-green-500">
                     No students found.
                   </div>
                 )}
@@ -273,11 +288,11 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </CardContent>
         </Card>
 
-        {/* Add / Edit Modal */}
+        {/* Add / Edit Student Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
-              <h2 className="text-xl font-bold">
+              <h2 className="text-xl font-bold text-green-800">
                 {isEditing ? "Edit Student Assignment" : "Add Enrollment"}
               </h2>
 
@@ -287,18 +302,18 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     placeholder="Search student..."
                     value={modalSearchTerm}
                     onChange={(e) => setModalSearchTerm(e.target.value)}
+                    className="border-green-300 focus:ring-green-500 focus:border-green-500"
                   />
-
                   {searchResults.length > 0 && (
-                    <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
+                    <div className="border-green-300 rounded-md p-2 max-h-40 overflow-y-auto">
                       {searchResults.map((s) => (
                         <div
                           key={s._id}
                           onClick={() =>
                             setFormData((prev) => ({ ...prev, userId: s._id }))
                           }
-                          className={`p-2 cursor-pointer rounded hover:bg-gray-100 ${
-                            formData.userId === s._id ? "bg-gray-200" : ""
+                          className={`p-2 cursor-pointer rounded hover:bg-green-50 ${
+                            formData.userId === s._id ? "bg-green-100" : ""
                           }`}
                         >
                           {s.firstName} {s.lastName} ({s.email})
@@ -315,7 +330,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                   setFormData((prev) => ({ ...prev, companyId: val }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-green-300 focus:ring-green-500 focus:border-green-500">
                   <SelectValue placeholder="Select company" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,6 +351,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     deploymentDate: e.target.value,
                   }))
                 }
+                className="border-green-300 focus:ring-green-500 focus:border-green-500"
               />
 
               <Select
@@ -344,7 +360,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                   setFormData((prev) => ({ ...prev, status: val }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-green-300 focus:ring-green-500 focus:border-green-500">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -355,10 +371,17 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
               </Select>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={closeModal}>
+                <Button
+                  variant="outline"
+                  className="border-green-500 text-green-600 hover:bg-green-100"
+                  onClick={closeModal}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleSaveOrUpdate}>
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleSaveOrUpdate}
+                >
                   {isEditing ? "Update" : "Assign"}
                 </Button>
               </div>

@@ -17,6 +17,7 @@ import { Upload as UploadIcon, FileText } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { documentService } from "~/app/services/document.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
+import { requirementService } from "~/app/services/requirement.service";
 
 interface Document {
   _id: string;
@@ -25,26 +26,16 @@ interface Document {
   status: string;
 }
 
-const courseRequirements: Record<string, string[]> = {
-  BSIT: [
-    "Registration form",
-    "School ID",
-    "Good moral",
-    "Resume",
-    "Medical",
-    "MOA",
-    "Notary parent consent",
-    "Internship contract agreement",
-    "Endorsement Letter",
-    "Student Intern's personal history statement",
-    "Acceptance Letter",
-  ],
-  BSBA: ["Medical certificate", "Insurance", "X-ray result"],
-};
+interface Requirement {
+  _id: string;
+  name: string;
+  program: string;
+}
 
 const Upload = ({ userRole, userName, onLogout }: PageProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [documentsList, setDocumentsList] = useState<Document[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -59,8 +50,33 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
+  const fetchRequirements = async () => {
+    try {
+      const userCourse = getUserFromLocalStorage()?.user?.program;
+      if (!userCourse) {
+        setRequirements([]);
+        return;
+      }
+
+      const response = await requirementService.getAll();
+
+      // Ensure response is an array before filtering
+      const filtered = Array.isArray(response)
+        ? response.filter(
+            (req: any) => req.program === userCourse.toLowerCase()
+          )
+        : [];
+
+      setRequirements(filtered);
+    } catch (err) {
+      console.error("Failed to load requirements:", err);
+      setRequirements([]);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchRequirements();
   }, []);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -96,7 +112,7 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
-  const userCourse = getUserFromLocalStorage()?.user?.course || "BSIT";
+  const userCourse = getUserFromLocalStorage()?.user?.program || "No Program";
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
@@ -114,7 +130,7 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
           </div>
         </div>
 
-        {/* Course Requirements */}
+        {/* Dynamic Requirements from API */}
         <Card className="shadow-lg border-gray-200">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">
@@ -123,9 +139,11 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
           </CardHeader>
           <CardContent>
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-              {courseRequirements[userCourse]?.map((req, idx) => (
-                <li key={idx}>{req}</li>
-              ))}
+              {requirements.length > 0 ? (
+                requirements.map((req) => <li key={req._id}>{req.name}</li>)
+              ) : (
+                <li className="text-gray-500">No requirements found.</li>
+              )}
             </ul>
           </CardContent>
         </Card>

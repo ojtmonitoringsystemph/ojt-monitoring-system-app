@@ -163,35 +163,36 @@ const Coordinators: React.FC<PageProps> = ({
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 bg-white">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Coordinators</h1>
+          <h1 className="text-3xl font-bold text-green-700">Coordinators</h1>
           <Button
             onClick={handleAddCoordinator}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
           >
             <Plus className="h-4 w-4" />
             Add Coordinator
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Coordinators</CardTitle>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Card className="border border-green-200">
+          <CardHeader className="bg-green-50">
+            <CardTitle className="text-green-700">All Coordinators</CardTitle>
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 h-4 w-4" />
               <Input
                 placeholder="Search coordinators..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-green-300 focus:border-green-500"
               />
             </div>
           </CardHeader>
 
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-green-600">
                 Loading coordinators...
               </div>
             ) : (
@@ -211,7 +212,7 @@ const Coordinators: React.FC<PageProps> = ({
                         status:
                           coordinator.status === "inactive"
                             ? "inactive"
-                            : "active", // ✅ restrict type
+                            : "active",
                         avatar: coordinator.avatar || "",
                         location: coordinator.location || "",
                       }}
@@ -221,7 +222,7 @@ const Coordinators: React.FC<PageProps> = ({
                 </div>
 
                 {coordinators.length === 0 && !loading && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-green-600">
                     No coordinators found.
                   </div>
                 )}
@@ -233,8 +234,8 @@ const Coordinators: React.FC<PageProps> = ({
         {/* Add/Edit Coordinator Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
-              <h2 className="text-xl font-bold">
+            <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4 border border-green-200">
+              <h2 className="text-xl font-bold text-green-700">
                 {editingCoordinator ? "Edit Coordinator" : "Add Coordinator"}
               </h2>
 
@@ -245,6 +246,7 @@ const Coordinators: React.FC<PageProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, firstName: e.target.value })
                   }
+                  className="border-green-300 focus:border-green-500"
                 />
                 <Input
                   placeholder="Last Name"
@@ -252,6 +254,7 @@ const Coordinators: React.FC<PageProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, lastName: e.target.value })
                   }
+                  className="border-green-300 focus:border-green-500"
                 />
               </div>
 
@@ -263,45 +266,21 @@ const Coordinators: React.FC<PageProps> = ({
                   setFormData({ ...formData, email: e.target.value })
                 }
                 disabled
+                className="border-green-300 focus:border-green-500"
               />
-              {/* 
-              <Input
-                placeholder="Phone"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-              />
-
-              <Input
-                placeholder="Department"
-                value={formData.department}
-                onChange={(e) =>
-                  setFormData({ ...formData, department: e.target.value })
-                }
-              />
-
-              <Input
-                placeholder="Specialization"
-                value={formData.specialization}
-                onChange={(e) =>
-                  setFormData({ ...formData, specialization: e.target.value })
-                }
-              />
-
-              <Input
-                placeholder="Location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-              /> */}
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setShowModal(false)}>
+                <Button
+                  variant="outline"
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                  onClick={() => setShowModal(false)}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleSave}>
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleSave}
+                >
                   {editingCoordinator ? "Update" : "Add"}
                 </Button>
               </div>

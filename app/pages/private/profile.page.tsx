@@ -15,6 +15,7 @@ import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 
 interface ProfileData {
   _id?: string;
+  userName: string;
   firstName: string;
   lastName: string;
   middleName?: string;
@@ -23,6 +24,8 @@ interface ProfileData {
   program?: string;
   avatar?: string;
 }
+
+const programs = ["BSIT", "BSBA"]; // Replace with actual programs
 
 const Profile = ({ userRole, userName, onLogout }: PageProps) => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -41,7 +44,6 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
     text: string;
   } | null>(null);
 
-  // Fetch profile on load
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -57,9 +59,8 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
       }
     };
     fetchProfile();
-  }, []);
+  }, [user?._id]);
 
-  // Handle avatar file change
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -68,7 +69,6 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
-  // Upload avatar
   const handleUploadAvatar = async () => {
     if (!avatarFile || !profile?._id) return;
     try {
@@ -94,7 +94,6 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
-  // Update profile info
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -114,7 +113,6 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
     }
   };
 
-  // Change password
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -142,7 +140,14 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
+        {/* Greeting */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-green-700">
+            Welcome, {userName}!
+          </h1>
+        </div>
+
         {/* Profile Card */}
         <Card>
           <CardHeader>
@@ -175,7 +180,7 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
                     <Button
                       onClick={handleUploadAvatar}
                       disabled={loading}
-                      className="text-sm"
+                      className="text-sm bg-green-600 hover:bg-green-700 text-white"
                     >
                       {loading ? "Uploading..." : "Upload Avatar"}
                     </Button>
@@ -184,6 +189,18 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
 
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-medium text-gray-700">
+                        Username
+                      </label>
+                      <Input
+                        value={profile.userName || ""}
+                        disabled={!editing}
+                        onChange={(e) =>
+                          setProfile({ ...profile, userName: e.target.value })
+                        }
+                      />
+                    </div>
                     <div>
                       <label className="font-medium text-gray-700">
                         First Name
@@ -233,23 +250,31 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
                         <label className="font-medium text-gray-700">
                           Program
                         </label>
-                        <Input
+                        <select
+                          className="w-full border rounded px-3 py-2"
                           value={profile.program}
                           disabled={!editing}
                           onChange={(e) =>
-                            setProfile({
-                              ...profile,
-                              program: e.target.value,
-                            })
+                            setProfile({ ...profile, program: e.target.value })
                           }
-                        />
+                        >
+                          {programs.map((prog) => (
+                            <option key={prog} value={prog}>
+                              {prog}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
                   </div>
 
                   {editing ? (
-                    <div className="flex gap-3">
-                      <Button type="submit" disabled={loading}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
                         {loading ? "Saving..." : "Save Changes"}
                       </Button>
                       <Button
@@ -261,7 +286,11 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
                       </Button>
                     </div>
                   ) : (
-                    <Button type="button" onClick={() => setEditing(true)}>
+                    <Button
+                      type="button"
+                      onClick={() => setEditing(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
                       Edit Profile
                     </Button>
                   )}
@@ -326,7 +355,11 @@ const Profile = ({ userRole, userName, onLogout }: PageProps) => {
                 </p>
               )}
 
-              <Button type="submit" disabled={loading}>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
                 {loading ? "Processing..." : "Change Password"}
               </Button>
             </form>

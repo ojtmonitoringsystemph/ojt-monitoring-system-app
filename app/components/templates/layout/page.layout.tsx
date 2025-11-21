@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 
 import { SidebarProvider } from "@/components/atoms/sidebar";
 import AppHeader from "@/components/templates/layout/app.header";
-import AppSidebar from "@/components/templates/layout/app.sidebar";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/app/hooks/use.auth";

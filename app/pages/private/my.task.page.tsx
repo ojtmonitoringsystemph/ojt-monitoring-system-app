@@ -111,7 +111,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-3">
-          <CheckSquare className="h-8 w-8 text-primary" />
+          <CheckSquare className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-3xl font-bold text-foreground">My Tasks</h1>
             <p className="text-muted-foreground">
@@ -132,7 +132,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 {tasks.map((task) => (
                   <div
                     key={task._id}
-                    className="border rounded-lg p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="border rounded-lg p-4 hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={() => openModal(task)}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -182,7 +182,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </CardContent>
         </Card>
 
-        {/* Modal */}
+        {/* Task Modal */}
         {isModalOpen && selectedTask && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-white rounded-lg w-3/4 max-w-2xl p-6 relative overflow-y-auto max-h-[80vh]">
@@ -207,7 +207,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 {selectedTask.description}
               </p>
 
-              {/* Upload */}
+              {/* Upload Submission */}
               <div className="mb-4">
                 <label className="font-semibold mb-2 block">
                   Upload Submission Proof:
@@ -227,7 +227,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 )}
               </div>
 
-              {/* Files List */}
+              {/* Uploaded Files */}
               <p className="font-semibold mb-2">Uploaded Files:</p>
               {selectedTask.submissionProofUrl.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -254,7 +254,7 @@ const MyTasks: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                           download
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline text-sm break-all text-center"
+                          className="text-green-600 hover:underline text-sm break-all text-center"
                         >
                           {fileUrl.split("/").pop()}
                         </a>

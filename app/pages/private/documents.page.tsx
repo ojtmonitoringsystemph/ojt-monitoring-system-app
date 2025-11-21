@@ -61,8 +61,14 @@ const DocumentsPage: React.FC = () => {
 
   return (
     <PageLayout>
-      <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
-        <h1 style={{ marginBottom: "1.5rem" }}>Documents</h1>
+      <div
+        style={{
+          padding: "2rem",
+          fontFamily: "Arial, sans-serif",
+          backgroundColor: "#fff",
+        }}
+      >
+        <h1 style={{ marginBottom: "1.5rem", color: "#2e7d32" }}>Documents</h1>
 
         <input
           type="text"
@@ -74,16 +80,21 @@ const DocumentsPage: React.FC = () => {
             padding: "0.75rem 1rem",
             fontSize: "1rem",
             borderRadius: "8px",
-            border: "1px solid #ccc",
+            border: "1px solid #a5d6a7",
             marginBottom: "2rem",
             boxSizing: "border-box",
+            outlineColor: "#2e7d32",
           }}
         />
 
         {loading ? (
-          <div style={{ textAlign: "center" }}>Loading...</div>
+          <div style={{ textAlign: "center", color: "#2e7d32" }}>
+            Loading...
+          </div>
         ) : !documents.length ? (
-          <p style={{ textAlign: "center" }}>No documents found.</p>
+          <p style={{ textAlign: "center", color: "#2e7d32" }}>
+            No documents found.
+          </p>
         ) : (
           <div
             style={{
@@ -97,7 +108,7 @@ const DocumentsPage: React.FC = () => {
                 <div
                   key={`${entry._id}-${index}`}
                   style={{
-                    border: "1px solid #e0e0e0",
+                    border: "1px solid #c8e6c9",
                     borderRadius: "10px",
                     padding: "1rem",
                     backgroundColor: "#fff",
@@ -118,7 +129,7 @@ const DocumentsPage: React.FC = () => {
                     style={{
                       fontSize: "2rem",
                       marginBottom: "0.5rem",
-                      color: "#1976d2",
+                      color: "#2e7d32",
                     }}
                   >
                     📄
@@ -139,7 +150,7 @@ const DocumentsPage: React.FC = () => {
                       display: "block",
                       marginTop: "0.5rem",
                       fontSize: "0.875rem",
-                      color: "#1976d2",
+                      color: "#2e7d32",
                       textDecoration: "underline",
                     }}
                   >

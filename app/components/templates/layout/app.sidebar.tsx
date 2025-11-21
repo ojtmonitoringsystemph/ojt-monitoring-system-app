@@ -39,7 +39,13 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ userRole = "student" }) => {
   const adminMenuItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard },
     { title: "Account Management", url: "/accounts", icon: UserCog },
+    {
+      title: "Program Requirements",
+      url: "/program-requirements",
+      icon: BookOpen,
+    },
     { title: "Students", url: "/students", icon: Users },
+    { title: "Tasks", url: "/tasks", icon: CheckSquare },
     { title: "Coordinators", url: "/coordinators", icon: Users },
     { title: "Companies", url: "/companies", icon: Building2 },
     { title: "Enrollment", url: "/enrollment", icon: FileText },
