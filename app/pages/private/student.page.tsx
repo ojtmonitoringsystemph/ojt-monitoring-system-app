@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import PageLayout from "@/components/templates/layout/page.layout";
 import {
   Card,
@@ -15,10 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { Plus, Search, Edit } from "lucide-react";
+import { Plus, Search, Edit, UserPlus } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { userService } from "~/app/services/user.service";
 import { companyService } from "~/app/services/company.service";
+import { authService } from "~/app/services/auth.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 
 interface Student {
@@ -36,6 +38,7 @@ interface Student {
 }
 
 const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
+  const navigate = useNavigate();
   const getAuth = getUserFromLocalStorage();
   const [searchTerm, setSearchTerm] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
@@ -43,6 +46,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const [loading, setLoading] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
 
@@ -55,6 +59,21 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     deploymentDate: "",
     status: "scheduled",
   });
+
+  // Registration form state
+  const [registerFormData, setRegisterFormData] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    userName: "",
+    role: "student",
+    email: "",
+    password: "",
+    program: "",
+    acceptPolicy: false,
+  });
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   // Fetch all students
   const fetchStudents = async () => {
@@ -112,7 +131,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     return () => clearTimeout(timeout);
   }, [modalSearchTerm]);
 
-  // Add or Edit
+  // Add or Edit student assignment
   const handleSaveOrUpdate = async () => {
     if (!formData.userId || !formData.companyId || !formData.deploymentDate) {
       alert("Please fill all fields");
@@ -149,6 +168,81 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     }
   };
 
+  // Handle student registration
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError(null);
+
+    // Validation
+    if (
+      !registerFormData.firstName ||
+      !registerFormData.lastName ||
+      !registerFormData.userName ||
+      !registerFormData.email ||
+      !registerFormData.password ||
+      !registerFormData.program
+    ) {
+      setRegisterError("Please fill in all required fields.");
+      return;
+    }
+
+    if (!registerFormData.acceptPolicy) {
+      setRegisterError("You must accept the Privacy & Policy to continue.");
+      return;
+    }
+
+    setRegisterLoading(true);
+    try {
+      await authService.register(registerFormData);
+      alert("Student account created successfully!");
+      setShowRegisterModal(false);
+      resetRegisterForm();
+      fetchStudents(); // Refresh the student list
+    } catch (err: any) {
+      console.error(err);
+      setRegisterError(
+        err.response?.data?.message || "Registration failed. Please try again."
+      );
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  const resetRegisterForm = () => {
+    setRegisterFormData({
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      userName: "",
+      role: "student",
+      email: "",
+      password: "",
+      program: "",
+      acceptPolicy: false,
+    });
+    setRegisterError(null);
+  };
+
+  const handleRegisterChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setRegisterFormData({
+        ...registerFormData,
+        [name]: checked,
+      });
+      return;
+    }
+
+    setRegisterFormData({
+      ...registerFormData,
+      [name]: value,
+    });
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setIsEditing(false);
@@ -162,6 +256,11 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     });
     setSearchResults([]);
     setModalSearchTerm("");
+  };
+
+  const closeRegisterModal = () => {
+    setShowRegisterModal(false);
+    resetRegisterForm();
   };
 
   const handleEditStudent = (student: Student) => {
@@ -194,15 +293,23 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           <h1 className="text-3xl font-bold text-green-800">
             {userRole === "coordinator" ? "My Students" : "Students"}
           </h1>
-          <Button
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => {
-              setShowModal(true);
-              setIsEditing(false);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add Student
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => setShowRegisterModal(true)}
+            >
+              <UserPlus className="h-4 w-4" /> Create Student
+            </Button>
+            <Button
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                setShowModal(true);
+                setIsEditing(false);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Assign Student
+            </Button>
+          </div>
         </div>
 
         {/* Students Table */}
@@ -288,12 +395,14 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </CardContent>
         </Card>
 
-        {/* Add / Edit Student Modal */}
+        {/* Assign Student Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
               <h2 className="text-xl font-bold text-green-800">
-                {isEditing ? "Edit Student Assignment" : "Add Enrollment"}
+                {isEditing
+                  ? "Edit Student Assignment"
+                  : "Assign Student to Company"}
               </h2>
 
               {!isEditing && (
@@ -305,7 +414,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     className="border-green-300 focus:ring-green-500 focus:border-green-500"
                   />
                   {searchResults.length > 0 && (
-                    <div className="border-green-300 rounded-md p-2 max-h-40 overflow-y-auto">
+                    <div className="border border-green-300 rounded-md p-2 max-h-40 overflow-y-auto">
                       {searchResults.map((s) => (
                         <div
                           key={s._id}
@@ -385,6 +494,130 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                   {isEditing ? "Update" : "Assign"}
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Student Account Modal */}
+        {showRegisterModal && (
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold text-green-800 mb-4">
+                Create Student Account
+              </h2>
+
+              <form onSubmit={handleRegister} className="space-y-4">
+                <Input
+                  type="text"
+                  name="userName"
+                  placeholder="Username"
+                  value={registerFormData.userName}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Input
+                  type="text"
+                  name="firstName"
+                  placeholder="First Name"
+                  value={registerFormData.firstName}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Input
+                  type="text"
+                  name="middleName"
+                  placeholder="Middle Name"
+                  value={registerFormData.middleName}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Input
+                  type="text"
+                  name="lastName"
+                  placeholder="Last Name"
+                  value={registerFormData.lastName}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={registerFormData.email}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  value={registerFormData.password}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Select
+                  value={registerFormData.program}
+                  onValueChange={(val) =>
+                    setRegisterFormData((prev) => ({ ...prev, program: val }))
+                  }
+                >
+                  <SelectTrigger className="border-green-300 focus:ring-green-500 focus:border-green-500">
+                    <SelectValue placeholder="Select Program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bsit">BSIT</SelectItem>
+                    <SelectItem value="bsba">BSBA</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <label className="flex items-center space-x-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="acceptPolicy"
+                    checked={registerFormData.acceptPolicy}
+                    onChange={handleRegisterChange}
+                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-green-300 rounded"
+                  />
+                  <span>
+                    I accept the{" "}
+                    <span className="text-green-700 font-medium cursor-pointer underline">
+                      Privacy & Policy
+                    </span>
+                  </span>
+                </label>
+
+                {registerError && (
+                  <p className="text-red-600 text-sm text-center">
+                    {registerError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-green-500 text-green-600 hover:bg-green-100"
+                    onClick={closeRegisterModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={registerLoading}
+                    className={`bg-green-600 hover:bg-green-700 text-white ${
+                      registerLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {registerLoading ? "Creating..." : "Create Account"}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         )}

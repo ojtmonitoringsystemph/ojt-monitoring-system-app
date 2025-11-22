@@ -120,7 +120,7 @@ const Login = ({ onLogin }: LoginProps) => {
               {loading ? "Signing in..." : "Login"}
             </button>
 
-            <div className="text-center mt-4">
+            {/* <div className="text-center mt-4">
               <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
                 <button
@@ -131,7 +131,7 @@ const Login = ({ onLogin }: LoginProps) => {
                   Register here
                 </button>
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 
