@@ -50,7 +50,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ userRole = "student" }) => {
     { title: "Companies", url: "/companies", icon: Building2 },
     { title: "Enrollment", url: "/enrollment", icon: FileText },
     { title: "Messages", url: "/messages", icon: MessageSquare },
-    { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "Announcement", url: "/announcement", icon: Megaphone },
     { title: "Archives", url: "/archives", icon: Archive },
   ];
 

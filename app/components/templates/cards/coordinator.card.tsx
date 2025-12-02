@@ -55,18 +55,18 @@ const CoordinatorCard = ({ coordinator, onEdit }: CoordinatorCardProps) => {
                 >
                   {coordinator.status}
                 </Badge>
-                <Badge variant="outline">{coordinator.department}</Badge>
+                {/* <Badge variant="outline">{coordinator.department}</Badge> */}
               </div>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               onClick={() => onEdit(coordinator.id)}
             >
               <Edit className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
         </div>
       </CardHeader>
@@ -76,11 +76,11 @@ const CoordinatorCard = ({ coordinator, onEdit }: CoordinatorCardProps) => {
             <Mail className="h-4 w-4 mr-2" />
             {coordinator.email}
           </div>
-          <div className="flex items-center text-sm text-muted-foreground">
+          {/* <div className="flex items-center text-sm text-muted-foreground">
             <Phone className="h-4 w-4 mr-2" />
             {coordinator.phone}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
+          </div> */}
+          {/* <div className="flex items-center text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mr-2" />
             {coordinator.location}
           </div>
@@ -93,7 +93,7 @@ const CoordinatorCard = ({ coordinator, onEdit }: CoordinatorCardProps) => {
             <p className="text-sm text-muted-foreground">
               {coordinator.specialization}
             </p>
-          </div>
+          </div> */}
         </div>
       </CardContent>
     </Card>

@@ -39,18 +39,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </Button>
         )}
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+          {/* <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">
-              IT
+              OJT
             </span>
-          </div>
+          </div> */}
           <div>
-            <h1 className="text-xl font-bold text-foreground">
-              Green Intern Compass
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Internship Tracking System
-            </p>
+            <h1 className="text-xl font-bold text-green-600">On-The-Job</h1>
+            <p className="text-gray-600">Training Monitoring</p>
           </div>
         </div>
       </div>

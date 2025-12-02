@@ -8,10 +8,18 @@ import {
 } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
-import { Plus, Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
+import { Plus, Search, UserPlus } from "lucide-react";
 import CoordinatorCard from "@/components/templates/cards/coordinator.card";
 import { type PageProps } from "@/types/page.type";
 import { userService } from "@/services/user.service";
+import { authService } from "~/app/services/auth.service";
 
 interface Coordinator {
   _id: string;
@@ -39,17 +47,22 @@ const Coordinators: React.FC<PageProps> = ({
   const [editingCoordinator, setEditingCoordinator] =
     useState<Coordinator | null>(null);
 
-  const [formData, setFormData] = useState({
-    _id: "",
+  // Coordinator registration form state (changed from student)
+  const [registerFormData, setRegisterFormData] = useState({
     firstName: "",
+    middleName: "",
     lastName: "",
+    userName: "",
+    role: "coordinator", // Changed to coordinator
     email: "",
-    phone: "",
+    password: "",
     department: "",
     specialization: "",
-    status: "active",
-    location: "",
+    phone: "",
+    acceptPolicy: false,
   });
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   // Fetch all coordinators
   const fetchCoordinators = async () => {
@@ -90,6 +103,87 @@ const Coordinators: React.FC<PageProps> = ({
     }
   };
 
+  // Handle coordinator registration (changed from student)
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError(null);
+
+    // Validation
+    if (
+      !registerFormData.firstName ||
+      !registerFormData.lastName ||
+      !registerFormData.userName ||
+      !registerFormData.email ||
+      !registerFormData.password
+    ) {
+      setRegisterError("Please fill in all required fields.");
+      return;
+    }
+
+    if (!registerFormData.acceptPolicy) {
+      setRegisterError("You must accept the Privacy & Policy to continue.");
+      return;
+    }
+
+    setRegisterLoading(true);
+    try {
+      await authService.register(registerFormData);
+      alert("Coordinator account created successfully!");
+      setShowModal(false);
+      resetRegisterForm();
+      fetchCoordinators(); // Refresh the coordinator list
+    } catch (err: any) {
+      console.error(err);
+      setRegisterError(
+        err.response?.data?.message || "Registration failed. Please try again."
+      );
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  const resetRegisterForm = () => {
+    setRegisterFormData({
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      userName: "",
+      role: "coordinator",
+      email: "",
+      password: "",
+      department: "",
+      specialization: "",
+      phone: "",
+      acceptPolicy: false,
+    });
+    setRegisterError(null);
+  };
+
+  const handleRegisterChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setRegisterFormData({
+        ...registerFormData,
+        [name]: checked,
+      });
+      return;
+    }
+
+    setRegisterFormData({
+      ...registerFormData,
+      [name]: value,
+    });
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    resetRegisterForm();
+  };
+
   // Debounce search
   useEffect(() => {
     const timeout = setTimeout(() => handleSearchCoordinator(), 300);
@@ -103,62 +197,24 @@ const Coordinators: React.FC<PageProps> = ({
 
   const handleEdit = (coordinator: Coordinator) => {
     setEditingCoordinator(coordinator);
-    setFormData({
-      _id: coordinator._id,
+    setRegisterFormData({
       firstName: coordinator.firstName,
+      middleName: "",
       lastName: coordinator.lastName,
+      userName: coordinator.email, // Using email as username
+      role: "coordinator",
       email: coordinator.email,
-      phone: coordinator.phone || "",
+      password: "", // Password not shown for editing
       department: coordinator.department || "",
       specialization: coordinator.specialization || "",
-      status: coordinator.status || "active",
-      location: coordinator.location || "",
+      phone: coordinator.phone || "",
+      acceptPolicy: true, // Set to true for editing
     });
     setShowModal(true);
   };
 
   const handleDelete = (id: string) => {
     setCoordinators((prev) => prev.filter((c) => c._id !== id));
-  };
-
-  const handleAddCoordinator = () => {
-    setEditingCoordinator(null);
-    setFormData({
-      _id: "",
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      department: "",
-      specialization: "",
-      status: "active",
-      location: "",
-    });
-    setShowModal(true);
-  };
-
-  const handleSave = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.email) {
-      alert("Please fill all required fields.");
-      return;
-    }
-
-    try {
-      if (editingCoordinator) {
-        // Update existing coordinator
-        await userService.patch(formData);
-        alert("Coordinator updated successfully!");
-      } else {
-        // Add new coordinator
-        await userService.create({ ...formData, role: "coordinator" });
-        alert("Coordinator added successfully!");
-      }
-      setShowModal(false);
-      fetchCoordinators();
-    } catch (error) {
-      console.error("Failed to save coordinator:", error);
-      alert("Failed to save coordinator.");
-    }
   };
 
   return (
@@ -168,11 +224,10 @@ const Coordinators: React.FC<PageProps> = ({
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-green-700">Coordinators</h1>
           <Button
-            onClick={handleAddCoordinator}
-            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => setShowModal(true)}
           >
-            <Plus className="h-4 w-4" />
-            Add Coordinator
+            <UserPlus className="h-4 w-4" /> Create Coordinator
           </Button>
         </div>
 
@@ -231,59 +286,153 @@ const Coordinators: React.FC<PageProps> = ({
           </CardContent>
         </Card>
 
-        {/* Add/Edit Coordinator Modal */}
+        {/* Create/Edit Coordinator Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4 border border-green-200">
-              <h2 className="text-xl font-bold text-green-700">
-                {editingCoordinator ? "Edit Coordinator" : "Add Coordinator"}
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-green-200">
+              <h2 className="text-xl font-bold text-green-800 mb-4">
+                {editingCoordinator
+                  ? "Edit Coordinator"
+                  : "Create Coordinator Account"}
               </h2>
 
-              <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleRegister} className="space-y-4">
                 <Input
-                  placeholder="First Name"
-                  value={formData.firstName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
-                  className="border-green-300 focus:border-green-500"
+                  type="text"
+                  name="userName"
+                  placeholder="Username"
+                  value={registerFormData.userName}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  disabled={!!editingCoordinator} // Disable username editing for existing coordinators
                 />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    type="text"
+                    name="firstName"
+                    placeholder="First Name"
+                    value={registerFormData.firstName}
+                    onChange={handleRegisterChange}
+                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  />
+                  <Input
+                    type="text"
+                    name="lastName"
+                    placeholder="Last Name"
+                    value={registerFormData.lastName}
+                    onChange={handleRegisterChange}
+                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  />
+                </div>
+
                 <Input
-                  placeholder="Last Name"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
-                  className="border-green-300 focus:border-green-500"
+                  type="text"
+                  name="middleName"
+                  placeholder="Middle Name (Optional)"
+                  value={registerFormData.middleName}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
                 />
-              </div>
 
-              <Input
-                placeholder="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                disabled
-                className="border-green-300 focus:border-green-500"
-              />
+                <Input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={registerFormData.email}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  disabled={!!editingCoordinator} // Disable email editing for existing coordinators
+                />
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="border-green-600 text-green-600 hover:bg-green-50"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-green-600 text-white hover:bg-green-700"
-                  onClick={handleSave}
-                >
-                  {editingCoordinator ? "Update" : "Add"}
-                </Button>
-              </div>
+                {!editingCoordinator && (
+                  <Input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    value={registerFormData.password}
+                    onChange={handleRegisterChange}
+                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  />
+                )}
+
+                {/* <Input
+                  type="text"
+                  name="phone"
+                  placeholder="Phone Number"
+                  value={registerFormData.phone}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                /> */}
+
+                {/* <Input
+                  type="text"
+                  name="department"
+                  placeholder="Department"
+                  value={registerFormData.department}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+
+                <Input
+                  type="text"
+                  name="specialization"
+                  placeholder="Specialization"
+                  value={registerFormData.specialization}
+                  onChange={handleRegisterChange}
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                /> */}
+
+                {!editingCoordinator && (
+                  <label className="flex items-center space-x-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      name="acceptPolicy"
+                      checked={registerFormData.acceptPolicy}
+                      onChange={handleRegisterChange}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-green-300 rounded"
+                    />
+                    <span>
+                      I accept the{" "}
+                      <span className="text-green-700 font-medium cursor-pointer underline">
+                        Privacy & Policy
+                      </span>
+                    </span>
+                  </label>
+                )}
+
+                {registerError && (
+                  <p className="text-red-600 text-sm text-center">
+                    {registerError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-green-500 text-green-600 hover:bg-green-100"
+                    onClick={closeModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={registerLoading}
+                    className={`bg-green-600 hover:bg-green-700 text-white ${
+                      registerLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {registerLoading
+                      ? editingCoordinator
+                        ? "Updating..."
+                        : "Creating..."
+                      : editingCoordinator
+                      ? "Update Coordinator"
+                      : "Create Account"}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         )}

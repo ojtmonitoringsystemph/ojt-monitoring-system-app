@@ -6,7 +6,7 @@ import { SamplePage } from "../pages/sample.page";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "HealthLink | Login" },
+    { title: "OJT" },
     {
       name: "description",
       content: "Electronic Medical Records system for FTCC.",

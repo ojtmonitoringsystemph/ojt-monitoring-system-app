@@ -57,13 +57,13 @@ const navigation: NavigationItem[] = [
     name: "Messages",
     href: "/messages",
     icon: MessageSquare,
-    roles: ["admin", "coordinator", "student"],
+    roles: ["coordinator", "student"],
   },
   {
     name: "Tasks",
     href: "/tasks",
     icon: CheckSquare,
-    roles: ["coordinator", "admin"],
+    roles: ["coordinator"],
   },
   {
     name: "Documents",
@@ -82,6 +82,12 @@ const navigation: NavigationItem[] = [
     href: "/my-tasks",
     icon: CheckSquare,
     roles: ["student"],
+  },
+  {
+    name: "Announcement",
+    href: "/announcement",
+    icon: CheckSquare,
+    roles: ["coordinator", "student"],
   },
 ];
 

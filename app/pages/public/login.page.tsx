@@ -55,10 +55,8 @@ const Login = ({ onLogin }: LoginProps) => {
           <div className="text-center mb-8 lg:hidden">
             {/* Show on mobile only */}
             <img src="intern.gif" alt="" className="w-400 mb-6" />
-            <h1 className="text-3xl font-bold text-green-600">
-              Green Intern Compass
-            </h1>
-            <p className="text-gray-600 mt-2">Internship Tracking System</p>
+            <h1 className="text-3xl font-bold text-green-600">On-The-Job</h1>
+            <p className="text-gray-600 mt-2">Training Monitoring</p>
           </div>
           <p className="text-gray-500 mt-2 text-center">Sign in to continue</p>
           <div className="space-y-5">
@@ -73,7 +71,7 @@ const Login = ({ onLogin }: LoginProps) => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm 
               focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                placeholder="Enter your email"
+                placeholder="Enter Your Username"
               />
             </div>
 
