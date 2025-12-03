@@ -4,17 +4,11 @@ import Dashboard from "./dashboard.page";
 import { type PageProps } from "@/types/page.type";
 
 const Index = ({ onLogout }: Omit<PageProps, "userRole" | "userName">) => {
-  const [userRole, setUserRole] = useState<"admin" | "coordinator" | "student">(
-    "student"
-  );
+  const [userRole, setUserRole] = useState<"admin" | "coordinator" | "student">("student");
   const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
-    const savedRole = localStorage.getItem("role") as
-      | "admin"
-      | "coordinator"
-      | "student"
-      | null;
+    const savedRole = localStorage.getItem("role") as "admin" | "coordinator" | "student" | null;
     const savedName = localStorage.getItem("name");
 
     if (savedRole) setUserRole(savedRole);

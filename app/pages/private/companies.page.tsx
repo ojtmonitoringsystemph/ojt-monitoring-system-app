@@ -140,37 +140,38 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6 bg-white">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Building2 className="h-8 w-8 text-green-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0 mt-1 sm:mt-0" />
             <div>
-              <h1 className="text-3xl font-bold text-green-700">Companies</h1>
-              <p className="text-green-600">
+              <h1 className="text-2xl sm:text-3xl font-bold text-green-700">Companies</h1>
+              <p className="text-xs sm:text-sm text-green-600">
                 Manage partner companies and internship opportunities
               </p>
             </div>
           </div>
           <Button
-            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 w-full sm:w-auto justify-center text-xs sm:text-sm px-2 sm:px-4"
             onClick={() => {
               setEditingCompany(null);
               setShowForm(true);
             }}
           >
             <Plus className="h-4 w-4" />
-            Add Company
+            <span className="hidden sm:inline">Add Company</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
 
         {/* Company List */}
         {loading ? (
-          <p className="text-green-600">Loading companies...</p>
+          <p className="text-green-600 text-sm">Loading companies...</p>
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <p className="text-red-500 text-sm">{error}</p>
         ) : companies.length === 0 ? (
-          <p className="text-green-600">No companies found.</p>
+          <p className="text-green-600 text-sm">No companies found.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {companies.map((company) => (
@@ -209,9 +210,9 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 space-y-4 border border-green-200">
-              <h2 className="text-xl font-bold text-green-700">
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50 p-4">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-4 sm:p-6 space-y-3 sm:space-y-4 border border-green-200 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-lg sm:text-xl font-bold text-green-700">
                 {editingCompany ? "Edit Company" : "Add New Company"}
               </h2>
 
@@ -220,53 +221,56 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
                 placeholder="Company Name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded text-sm"
               />
               <input
                 name="address"
                 placeholder="Address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded text-sm"
               />
               <textarea
                 name="description"
                 placeholder="Description"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded text-sm"
               />
               <input
                 name="contactPerson"
                 placeholder="Contact Person"
                 value={formData.contactPerson}
                 onChange={handleChange}
-                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded text-sm"
               />
               <input
                 name="contactEmail"
                 placeholder="Contact Email"
                 value={formData.contactEmail}
                 onChange={handleChange}
-                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded text-sm"
               />
               <input
                 name="contactPhone"
                 placeholder="Contact Phone"
                 value={formData.contactPhone}
                 onChange={handleChange}
-                className="w-full border border-green-300 focus:border-green-500 p-2 rounded"
+                className="w-full border border-green-300 focus:border-green-500 p-2 rounded text-sm"
               />
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex gap-2 pt-2 flex-col-reverse sm:flex-row sm:justify-end">
                 <Button
                   variant="outline"
-                  className="border-green-600 text-green-600 hover:bg-green-50"
+                  className="border-green-600 text-green-600 hover:bg-green-50 text-sm"
                   onClick={handleCancel}
                 >
                   Cancel
                 </Button>
-                <Button className="bg-green-600 text-white hover:bg-green-700" onClick={handleSave}>
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700 text-sm"
+                  onClick={handleSave}
+                >
                   {editingCompany ? "Update" : "Save"}
                 </Button>
               </div>

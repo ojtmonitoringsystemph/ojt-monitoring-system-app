@@ -188,6 +188,13 @@
 
 html {
   font-size: var(--font-size);
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 .scroll-thin {

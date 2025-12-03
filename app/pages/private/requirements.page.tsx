@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import {
@@ -15,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { Plus, Edit, Trash } from "lucide-react";
+import { Plus, Edit, Trash, Filter } from "lucide-react";
 
 import { requirementService } from "~/app/services/requirement.service";
 import { type PageProps } from "@/types/page.type";
@@ -26,15 +21,12 @@ interface Requirement {
   program: "bsit" | "bsba";
 }
 
-const RequirementsPage: React.FC<PageProps> = ({
-  userRole,
-  userName,
-  onLogout,
-}) => {
+const RequirementsPage: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [programFilter, setProgramFilter] = useState("all");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -115,110 +107,173 @@ const RequirementsPage: React.FC<PageProps> = ({
     setFormData({ name: "", program: "" });
   };
 
+  // Filter requirements by program
+  const filteredRequirements = requirements.filter((req) => {
+    if (programFilter === "all") return true;
+    return req.program === programFilter;
+  });
+
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6 bg-white">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-green-700">Requirements</h1>
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-green-700">Requirements</h1>
 
-          <Button
-            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
-            onClick={() => {
-              setShowModal(true);
-              setIsEditing(false);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add Requirement
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Select value={programFilter} onValueChange={setProgramFilter}>
+              <SelectTrigger className="w-full sm:w-40 border-green-300 focus:border-green-500 text-xs sm:text-sm">
+                <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-green-600" />
+                <SelectValue placeholder="Program" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Programs</SelectItem>
+                <SelectItem value="bsit">BSIT</SelectItem>
+                <SelectItem value="bsba">BSBA</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4"
+              onClick={() => {
+                setShowModal(true);
+                setIsEditing(false);
+              }}
+            >
+              <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Add Requirement</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </div>
         </div>
 
-        <Card className="border border-green-200">
-          <CardHeader className="bg-green-50">
-            <CardTitle className="text-green-700">All Requirements</CardTitle>
-          </CardHeader>
+        {loading ? (
+          <div className="text-center py-8 text-green-700 text-sm">Loading...</div>
+        ) : (
+          <>
+            {/* Desktop Table View (md and above) */}
+            <div className="hidden md:block">
+              <Card className="border border-green-200">
+                <CardHeader className="bg-green-50">
+                  <CardTitle className="text-green-700">All Requirements</CardTitle>
+                </CardHeader>
 
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-6 text-green-700">Loading...</div>
-            ) : (
-              <table className="w-full border-collapse mt-3">
-                <thead>
-                  <tr className="border-b border-green-200">
-                    <th className="p-3 text-left font-medium text-green-700">
-                      Name
-                    </th>
-                    <th className="p-3 text-left font-medium text-green-700">
-                      Program
-                    </th>
-                    <th className="p-3 text-left font-medium text-green-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requirements.map((r) => (
-                    <tr key={r._id} className="border-b hover:bg-green-50">
-                      <td className="p-3">{r.name}</td>
-                      <td className="p-3 uppercase">{r.program}</td>
-                      <td className="p-3 flex gap-2">
+                <CardContent>
+                  <table className="w-full border-collapse mt-3">
+                    <thead>
+                      <tr className="border-b border-green-200">
+                        <th className="p-3 text-left font-medium text-green-700 text-sm">Name</th>
+                        <th className="p-3 text-left font-medium text-green-700 text-sm">
+                          Program
+                        </th>
+                        <th className="p-3 text-left font-medium text-green-700 text-sm">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRequirements.map((r) => (
+                        <tr key={r._id} className="border-b hover:bg-green-50">
+                          <td className="p-3 text-sm">{r.name}</td>
+                          <td className="p-3 uppercase text-sm font-medium">{r.program}</td>
+                          <td className="p-3 flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-600 text-green-600 hover:bg-green-50 text-xs"
+                              onClick={() => handleEdit(r)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="bg-red-600 text-white hover:bg-red-700 text-xs"
+                              onClick={() => handleDelete(r._id)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+
+                      {filteredRequirements.length === 0 && (
+                        <tr>
+                          <td className="p-4 text-center text-gray-500 text-sm" colSpan={3}>
+                            No requirements found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mobile Card View (below md) */}
+            <div className="md:hidden space-y-3">
+              {filteredRequirements.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-gray-500 text-sm">No requirements found</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredRequirements.map((r) => (
+                  <Card key={r._id} className="border-l-4 border-l-green-500">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-sm text-green-800">{r.name}</h3>
+                          <p className="text-xs text-green-600 uppercase mt-1">{r.program}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-green-600 text-green-600 hover:bg-green-50"
+                          className="flex-1 border-green-600 text-green-600 hover:bg-green-50 text-xs"
                           onClick={() => handleEdit(r)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" /> Edit
                         </Button>
 
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="bg-red-600 text-white hover:bg-red-700"
+                          className="flex-1 bg-red-600 text-white hover:bg-red-700 text-xs"
                           onClick={() => handleDelete(r._id)}
                         >
-                          <Trash className="h-4 w-4" />
+                          <Trash className="h-3.5 w-3.5" /> Delete
                         </Button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {requirements.length === 0 && (
-                    <tr>
-                      <td className="p-4 text-center text-gray-500" colSpan={3}>
-                        No requirements found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
-          </CardContent>
-        </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-lg rounded-lg p-6 space-y-4 shadow-lg border border-green-200">
-              <h2 className="text-xl font-bold text-green-700">
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50 p-4">
+            <div className="bg-white w-full max-w-lg rounded-lg p-4 sm:p-6 space-y-4 shadow-lg border border-green-200">
+              <h2 className="text-lg sm:text-xl font-bold text-green-700">
                 {isEditing ? "Edit Requirement" : "Add Requirement"}
               </h2>
 
               <Input
                 placeholder="Requirement name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="border-green-300 focus:border-green-500"
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                className="border-green-300 focus:border-green-500 text-sm"
               />
 
               <Select
                 value={formData.program}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({ ...prev, program: val }))
-                }
+                onValueChange={(val) => setFormData((prev) => ({ ...prev, program: val }))}
               >
-                <SelectTrigger className="border-green-300 focus:border-green-500">
+                <SelectTrigger className="border-green-300 focus:border-green-500 text-sm">
                   <SelectValue placeholder="Select program" />
                 </SelectTrigger>
                 <SelectContent>
@@ -227,16 +282,16 @@ const RequirementsPage: React.FC<PageProps> = ({
                 </SelectContent>
               </Select>
 
-              <div className="flex justify-end gap-3 pt-3">
+              <div className="flex gap-2 pt-3 flex-col-reverse sm:flex-row sm:justify-end">
                 <Button
                   variant="outline"
-                  className="border-green-600 text-green-600 hover:bg-green-50"
+                  className="border-green-600 text-green-600 hover:bg-green-50 text-sm"
                   onClick={closeModal}
                 >
                   Cancel
                 </Button>
                 <Button
-                  className="bg-green-600 text-white hover:bg-green-700"
+                  className="bg-green-600 text-white hover:bg-green-700 text-sm"
                   onClick={handleSubmit}
                 >
                   {isEditing ? "Update" : "Save"}

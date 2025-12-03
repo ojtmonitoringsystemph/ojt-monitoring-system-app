@@ -46,34 +46,12 @@ interface Toast {
 }
 
 const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
-  // Access control - only admin and coordinator can access this page
-  if (userRole === "student") {
-    return (
-      <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <Card className="w-full max-w-md">
-              <CardHeader className="text-center">
-                <div className="mx-auto h-12 w-12 text-red-500 mb-4">
-                  <XCircle className="h-12 w-12" />
-                </div>
-                <CardTitle className="text-xl text-red-600">Access Denied</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <p className="text-muted-foreground">
-                  You don't have permission to access this page. This section is only available to
-                  administrators and coordinators.
-                </p>
-                <Button onClick={() => window.history.back()} className="w-full">
-                  Go Back
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
+  // Get userRole from localStorage as fallback
+  const userData = getUserFromLocalStorage();
+  const actualUserRole = (userRole || userData?.user?.role || "student") as
+    | "admin"
+    | "coordinator"
+    | "student";
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,7 +59,7 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const userId = getUserFromLocalStorage()?.user?._id;
+  const userId = userData?.user?._id;
 
   // Toast state
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -223,11 +201,13 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
     position: "fixed",
     top: "1rem",
     right: "1rem",
+    left: "1rem",
     zIndex: 9999,
     display: "flex",
     flexDirection: "column",
     gap: "0.5rem",
     maxWidth: "350px",
+    margin: "0 auto",
   };
 
   const toastStyle = (type: "success" | "error"): React.CSSProperties => ({
@@ -271,15 +251,13 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
   if (isLoading) {
     return (
       <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Megaphone className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
-            </div>
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Megaphone className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Announcements</h1>
           </div>
           <div className="flex justify-center items-center h-64">
-            <div className="text-center">Loading announcements...</div>
+            <div className="text-center text-sm">Loading announcements...</div>
           </div>
         </div>
       </PageLayout>
@@ -289,16 +267,14 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
   if (error) {
     return (
       <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Megaphone className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
-            </div>
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Megaphone className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Announcements</h1>
           </div>
-          <div className="flex justify-center items-center h-64">
-            <div className="text-center text-red-500">{error}</div>
-            <Button onClick={fetchAnnouncements} className="ml-4">
+          <div className="flex flex-col justify-center items-center h-64 gap-4">
+            <div className="text-center text-red-500 text-sm">{error}</div>
+            <Button onClick={fetchAnnouncements} className="text-sm">
               Retry
             </Button>
           </div>
@@ -353,86 +329,99 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
       </style>
 
       <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Megaphone className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Megaphone className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Announcements</h1>
             </div>
 
-            {/* Create Announcement Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Announcement
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Announcement</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="title" className="text-sm font-medium">
-                      Title
-                    </label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Enter announcement title"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="content" className="text-sm font-medium">
-                      Content
-                    </label>
-                    <Textarea
-                      id="content"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Enter announcement content"
-                      rows={5}
-                    />
-                  </div>
+            {/* Create Announcement Dialog - Only for Admin and Coordinator */}
+            {(actualUserRole === "admin" || actualUserRole === "coordinator") && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2 text-xs sm:text-sm w-full sm:w-auto justify-center">
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Add Announcement</span>
+                    <span className="sm:hidden">Add</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[95vw] sm:w-full">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg sm:text-xl">
+                      Create New Announcement
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 sm:space-y-4">
+                    <div>
+                      <label htmlFor="title" className="text-xs sm:text-sm font-medium">
+                        Title
+                      </label>
+                      <Input
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Enter announcement title"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="content" className="text-xs sm:text-sm font-medium">
+                        Content
+                      </label>
+                      <Textarea
+                        id="content"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Enter announcement content"
+                        rows={5}
+                        className="text-sm"
+                      />
+                    </div>
 
-                  <div>
-                    <label htmlFor="targetProgram" className="text-sm font-medium">
-                      Target Program
-                    </label>
-                    <Select value={targetProgram} onValueChange={setTargetProgram}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select target program" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Programs</SelectItem>
-                        <SelectItem value="bsit">BSIT Only</SelectItem>
-                        <SelectItem value="bsba">BSBA Only</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div>
+                      <label htmlFor="targetProgram" className="text-xs sm:text-sm font-medium">
+                        Target Program
+                      </label>
+                      <Select value={targetProgram} onValueChange={setTargetProgram}>
+                        <SelectTrigger className="text-sm">
+                          <SelectValue placeholder="Select target program" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Programs</SelectItem>
+                          <SelectItem value="bsit">BSIT Only</SelectItem>
+                          <SelectItem value="bsba">BSBA Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateAnnouncement}>Create Announcement</Button>
+                    <div className="flex gap-2 pt-2 flex-col-reverse sm:flex-row sm:justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        className="text-sm"
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleCreateAnnouncement} className="text-sm">
+                        Create Announcement
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
 
           {/* Edit Announcement Dialog */}
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent>
+            <DialogContent className="w-[95vw] sm:w-full">
               <DialogHeader>
-                <DialogTitle>Edit Announcement</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">Edit Announcement</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label htmlFor="edit-title" className="text-sm font-medium">
+                  <label htmlFor="edit-title" className="text-xs sm:text-sm font-medium">
                     Title
                   </label>
                   <Input
@@ -440,10 +429,11 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter announcement title"
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <label htmlFor="edit-content" className="text-sm font-medium">
+                  <label htmlFor="edit-content" className="text-xs sm:text-sm font-medium">
                     Content
                   </label>
                   <Textarea
@@ -452,15 +442,16 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Enter announcement content"
                     rows={5}
+                    className="text-sm"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="edit-targetProgram" className="text-sm font-medium">
+                  <label htmlFor="edit-targetProgram" className="text-xs sm:text-sm font-medium">
                     Target Program
                   </label>
                   <Select value={targetProgram} onValueChange={setTargetProgram}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm">
                       <SelectValue placeholder="Select target program" />
                     </SelectTrigger>
                     <SelectContent>
@@ -471,11 +462,17 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
                   </Select>
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                <div className="flex gap-2 pt-2 flex-col-reverse sm:flex-row sm:justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                    className="text-sm"
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleUpdateAnnouncement}>Update Announcement</Button>
+                  <Button onClick={handleUpdateAnnouncement} className="text-sm">
+                    Update Announcement
+                  </Button>
                 </div>
               </div>
             </DialogContent>
@@ -483,52 +480,58 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Announcements</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Recent Announcements</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4">
               {announcements.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground text-sm">
                   No announcements found.
                 </div>
               ) : (
                 announcements.map((announcement) => (
                   <div
                     key={announcement._id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{announcement.title}</h3>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          By {getAuthorName(announcement.createdBy)} •{" "}
-                          {formatDate(announcement.createdAt)}
-                          {announcement.updatedAt !== announcement.createdAt && (
-                            <span className="ml-2">(Edited)</span>
-                          )}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm sm:text-base break-words">
+                          {announcement.title}
+                        </h3>
+                        <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                          <div>By {getAuthorName(announcement.createdBy)}</div>
+                          <div>
+                            {formatDate(announcement.createdAt)}
+                            {announcement.updatedAt !== announcement.createdAt && (
+                              <span className="ml-2">(Edited)</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Action buttons for creator */}
-                      <div className="flex items-center gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(announcement)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAnnouncement(announcement._id)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {/* Action buttons - Only for Admin and Coordinator */}
+                      {(actualUserRole === "admin" || actualUserRole === "coordinator") && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(announcement)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAnnouncement(announcement._id)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-muted-foreground whitespace-pre-wrap">
+                    <p className="text-muted-foreground whitespace-pre-wrap text-xs sm:text-sm">
                       {announcement.content}
                     </p>
                   </div>

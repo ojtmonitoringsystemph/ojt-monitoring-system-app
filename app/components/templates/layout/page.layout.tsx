@@ -39,9 +39,7 @@ const PageLayout = ({
       <div className="flex-1 flex flex-col">
         <AppHeader
           userRole={getAuth?.role}
-          userName={`${getAuth?.firstName || userName} ${
-            getAuth?.lastName || ""
-          }`}
+          userName={`${getAuth?.firstName || userName} ${getAuth?.lastName || ""}`}
           onLogout={() => logout()}
         />
         <main className="flex-1 overflow-auto">{children}</main>

@@ -223,35 +223,37 @@ const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => 
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6 bg-white">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-green-700">Coordinators</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-green-700">Coordinators</h1>
           <Button
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto justify-center text-xs sm:text-sm px-2 sm:px-4"
             onClick={() => setShowModal(true)}
           >
-            <UserPlus className="h-4 w-4" /> Create Coordinator
+            <UserPlus className="h-4 w-4" />{" "}
+            <span className="hidden sm:inline">Create Coordinator</span>
+            <span className="sm:hidden">Create</span>
           </Button>
         </div>
 
         <Card className="border border-green-200">
           <CardHeader className="bg-green-50">
-            <CardTitle className="text-green-700">All Coordinators</CardTitle>
-            <div className="relative mt-2">
+            <CardTitle className="text-lg sm:text-xl text-green-700">All Coordinators</CardTitle>
+            <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 h-4 w-4" />
               <Input
                 placeholder="Search coordinators..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-green-300 focus:border-green-500"
+                className="pl-10 border-green-300 focus:border-green-500 text-sm"
               />
             </div>
           </CardHeader>
 
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-green-600">Loading coordinators...</div>
+              <div className="text-center py-8 text-green-600 text-sm">Loading coordinators...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -279,7 +281,9 @@ const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => 
                 </div>
 
                 {coordinators.length === 0 && !loading && (
-                  <div className="text-center py-8 text-green-600">No coordinators found.</div>
+                  <div className="text-center py-8 text-green-600 text-sm">
+                    No coordinators found.
+                  </div>
                 )}
               </>
             )}
@@ -288,31 +292,31 @@ const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => 
 
         {/* Create/Edit Coordinator Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-green-200">
-              <h2 className="text-xl font-bold text-green-800 mb-4">
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50 p-4">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-4 sm:p-6 max-h-[90vh] overflow-y-auto border border-green-200">
+              <h2 className="text-lg sm:text-xl font-bold text-green-800 mb-4">
                 {editingCoordinator ? "Edit Coordinator" : "Create Coordinator Account"}
               </h2>
 
-              <form onSubmit={handleRegister} className="space-y-4">
+              <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
                 <Input
                   type="text"
                   name="userName"
                   placeholder="Username"
                   value={registerFormData.userName}
                   onChange={handleRegisterChange}
-                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
-                  disabled={!!editingCoordinator} // Disable username editing for existing coordinators
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
+                  disabled={!!editingCoordinator}
                 />
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <Input
                     type="text"
                     name="firstName"
                     placeholder="First Name"
                     value={registerFormData.firstName}
                     onChange={handleRegisterChange}
-                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
                   />
                   <Input
                     type="text"
@@ -320,7 +324,7 @@ const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => 
                     placeholder="Last Name"
                     value={registerFormData.lastName}
                     onChange={handleRegisterChange}
-                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
                   />
                 </div>
 
@@ -418,11 +422,11 @@ const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => 
                   <p className="text-red-600 text-sm text-center">{registerError}</p>
                 )}
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex gap-2 pt-2 flex-col-reverse sm:flex-row sm:justify-end">
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-green-500 text-green-600 hover:bg-green-100"
+                    className="border-green-500 text-green-600 hover:bg-green-100 text-sm"
                     onClick={closeModal}
                   >
                     Cancel
@@ -430,7 +434,7 @@ const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => 
                   <Button
                     type="submit"
                     disabled={registerLoading}
-                    className={`bg-green-600 hover:bg-green-700 text-white ${
+                    className={`bg-green-600 hover:bg-green-700 text-white text-sm ${
                       registerLoading ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   >

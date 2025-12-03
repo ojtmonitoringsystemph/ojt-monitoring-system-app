@@ -1,6 +1,7 @@
 import React, { useEffect, useState, type ChangeEvent } from "react";
 import { documentService } from "@/services/document.service";
 import PageLayout from "~/app/components/templates/layout/page.layout";
+import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 
 interface DocumentEntry {
   _id: string;
@@ -8,8 +9,11 @@ interface DocumentEntry {
     _id: string;
     firstName: string;
     lastName: string;
+    email: string;
+    program?: string;
     avatar?: string | null;
   };
+  documentName: string;
   documents: string[];
   status: string;
   remarks: string;
@@ -29,7 +33,23 @@ const DocumentsPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await documentService.getAll();
-      setDocuments(Array.isArray(res) ? res : []);
+      const allDocuments = Array.isArray(res) ? res : [];
+
+      // Get logged-in user's data from localStorage
+      const userData = getUserFromLocalStorage();
+      const actualUserRole = userData?.user?.role;
+      const userProgram = userData?.user?.program?.toLowerCase();
+
+      // Filter documents by coordinator's program
+      if (actualUserRole === "coordinator" && userProgram) {
+        const filteredDocuments = allDocuments.filter(
+          (doc: DocumentEntry) => doc.student.program?.toLowerCase() === userProgram
+        );
+        setDocuments(filteredDocuments);
+      } else {
+        // Admin sees all documents
+        setDocuments(allDocuments);
+      }
     } catch (error) {
       console.error("Error fetching documents:", error);
       setDocuments([]);
@@ -59,111 +79,312 @@ const DocumentsPage: React.FC = () => {
     }
   };
 
+  const getStatusBadgeColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "approved":
+        return { bg: "#e8f5e9", text: "#2e7d32", border: "#81c784" };
+      case "rejected":
+        return { bg: "#ffebee", text: "#c62828", border: "#e57373" };
+      default:
+        return { bg: "#fff3e0", text: "#ef6c00", border: "#ffb74d" };
+    }
+  };
+
   return (
     <PageLayout>
       <div
         style={{
           padding: "2rem",
           fontFamily: "Arial, sans-serif",
-          backgroundColor: "#fff",
+          backgroundColor: "#f5f5f5",
+          minHeight: "100vh",
         }}
       >
-        <h1 style={{ marginBottom: "1.5rem", color: "#2e7d32" }}>Documents</h1>
-
-        <input
-          type="text"
-          placeholder="Search documents..."
-          value={searchTerm}
-          onChange={handleSearch}
-          style={{
-            width: "100%",
-            padding: "0.75rem 1rem",
-            fontSize: "1rem",
-            borderRadius: "8px",
-            border: "1px solid #a5d6a7",
-            marginBottom: "2rem",
-            boxSizing: "border-box",
-            outlineColor: "#2e7d32",
-          }}
-        />
-
-        {loading ? (
-          <div style={{ textAlign: "center", color: "#2e7d32" }}>
-            Loading...
-          </div>
-        ) : !documents.length ? (
-          <p style={{ textAlign: "center", color: "#2e7d32" }}>
-            No documents found.
-          </p>
-        ) : (
-          <div
+        {/* Header */}
+        <div style={{ marginBottom: "2rem" }}>
+          <h1
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: "1.5rem",
+              fontSize: "2rem",
+              fontWeight: "bold",
+              color: "#2e7d32",
+              marginBottom: "0.5rem",
             }}
           >
-            {documents.map((entry) =>
-              entry.documents.map((fileUrl, index) => (
+            Student Documents
+          </h1>
+          <p style={{ color: "#666", fontSize: "0.95rem" }}>
+            View and manage all uploaded student documents
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div style={{ marginBottom: "2rem" }}>
+          <input
+            type="text"
+            placeholder="Search by student name, document name, or program..."
+            value={searchTerm}
+            onChange={handleSearch}
+            style={{
+              width: "100%",
+              padding: "0.875rem 1rem",
+              fontSize: "1rem",
+              borderRadius: "10px",
+              border: "2px solid #e0e0e0",
+              backgroundColor: "#fff",
+              boxSizing: "border-box",
+              outline: "none",
+              transition: "border-color 0.2s",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "#2e7d32")}
+            onBlur={(e) => (e.target.style.borderColor = "#e0e0e0")}
+          />
+        </div>
+
+        {loading ? (
+          <div
+            style={{ textAlign: "center", padding: "4rem", color: "#2e7d32", fontSize: "1.1rem" }}
+          >
+            Loading documents...
+          </div>
+        ) : !documents.length ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "4rem",
+              backgroundColor: "#fff",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+          >
+            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📄</div>
+            <p style={{ color: "#666", fontSize: "1.1rem" }}>No documents found.</p>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: "1.5rem" }}>
+            {documents.map((entry) => {
+              const statusColors = getStatusBadgeColor(entry.status);
+              return (
                 <div
-                  key={`${entry._id}-${index}`}
+                  key={entry._id}
                   style={{
-                    border: "1px solid #c8e6c9",
-                    borderRadius: "10px",
-                    padding: "1rem",
                     backgroundColor: "#fff",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
-                    transition: "transform 0.2s",
-                    cursor: "pointer",
+                    borderRadius: "12px",
+                    padding: "1.5rem",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    border: "1px solid #e0e0e0",
+                    transition: "box-shadow 0.2s, transform 0.2s",
                   }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLDivElement).style.transform =
-                      "translateY(-5px)")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLDivElement).style.transform =
-                      "translateY(0)")
-                  }
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
                 >
+                  {/* Header Section */}
                   <div
                     style={{
-                      fontSize: "2rem",
-                      marginBottom: "0.5rem",
-                      color: "#2e7d32",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: "1rem",
+                      borderBottom: "1px solid #f0f0f0",
+                      paddingBottom: "1rem",
                     }}
                   >
-                    📄
+                    <div style={{ flex: 1 }}>
+                      <h2
+                        style={{
+                          fontSize: "1.3rem",
+                          fontWeight: "600",
+                          color: "#2e7d32",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        {entry.documentName}
+                      </h2>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "1.5rem",
+                          flexWrap: "wrap",
+                          fontSize: "0.9rem",
+                          color: "#666",
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontWeight: "500", color: "#444" }}>Student:</span>{" "}
+                          {entry.student.firstName} {entry.student.lastName}
+                        </div>
+                        {entry.student.email && (
+                          <div>
+                            <span style={{ fontWeight: "500", color: "#444" }}>Email:</span>{" "}
+                            {entry.student.email}
+                          </div>
+                        )}
+                        {entry.student.program && (
+                          <div>
+                            <span style={{ fontWeight: "500", color: "#444" }}>Program:</span>{" "}
+                            <span
+                              style={{
+                                textTransform: "uppercase",
+                                fontWeight: "600",
+                                color: "#2e7d32",
+                              }}
+                            >
+                              {entry.student.program}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        padding: "0.4rem 1rem",
+                        borderRadius: "20px",
+                        fontSize: "0.85rem",
+                        fontWeight: "600",
+                        textTransform: "capitalize",
+                        backgroundColor: statusColors.bg,
+                        color: statusColors.text,
+                        border: `1px solid ${statusColors.border}`,
+                      }}
+                    >
+                      {entry.status}
+                    </div>
                   </div>
-                  <strong style={{ display: "block", marginBottom: "0.25rem" }}>
-                    {entry.student.firstName} {entry.student.lastName}
-                  </strong>
-                  {entry.remarks && (
-                    <p style={{ fontSize: "0.875rem", color: "#555" }}>
-                      {entry.remarks}
-                    </p>
-                  )}
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+
+                  {/* Metadata Section */}
+                  <div
                     style={{
-                      display: "block",
-                      marginTop: "0.5rem",
-                      fontSize: "0.875rem",
-                      color: "#2e7d32",
-                      textDecoration: "underline",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "1rem",
+                      fontSize: "0.85rem",
+                      color: "#888",
                     }}
                   >
-                    View File
-                  </a>
-                  <small
-                    style={{ color: "#999", display: "block", marginTop: 4 }}
+                    <div>
+                      <span style={{ fontWeight: "500" }}>Uploaded:</span>{" "}
+                      {new Date(entry.uploadedAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </div>
+                    <div>
+                      <span style={{ fontWeight: "500" }}>Files:</span> {entry.documents.length}
+                    </div>
+                  </div>
+
+                  {/* Remarks Section */}
+                  {entry.remarks && (
+                    <div
+                      style={{
+                        backgroundColor: "#f9fbe7",
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        marginBottom: "1rem",
+                        border: "1px solid #f0f4c3",
+                      }}
+                    >
+                      <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+                        <span style={{ fontWeight: "600", color: "#444" }}>Remarks:</span>{" "}
+                        {entry.remarks}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Files Grid */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                      gap: "1rem",
+                    }}
                   >
-                    {new Date(entry.uploadedAt).toLocaleDateString()}
-                  </small>
+                    {entry.documents.map((fileUrl, index) => {
+                      const isImage = fileUrl.match(/\.(jpeg|jpg|png|gif)$/i);
+                      return (
+                        <div
+                          key={`${entry._id}-${index}`}
+                          style={{
+                            border: "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                            padding: "0.75rem",
+                            backgroundColor: "#fafafa",
+                            textAlign: "center",
+                            transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f5f5f5";
+                            e.currentTarget.style.borderColor = "#2e7d32";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#fafafa";
+                            e.currentTarget.style.borderColor = "#e0e0e0";
+                          }}
+                        >
+                          {isImage ? (
+                            <img
+                              src={fileUrl}
+                              alt={`Document ${index + 1}`}
+                              style={{
+                                width: "100%",
+                                height: "100px",
+                                objectFit: "cover",
+                                borderRadius: "6px",
+                                marginBottom: "0.5rem",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: "2.5rem",
+                                marginBottom: "0.5rem",
+                                color: "#2e7d32",
+                              }}
+                            >
+                              📄
+                            </div>
+                          )}
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "inline-block",
+                              padding: "0.4rem 0.8rem",
+                              fontSize: "0.8rem",
+                              color: "#fff",
+                              backgroundColor: "#2e7d32",
+                              borderRadius: "6px",
+                              textDecoration: "none",
+                              fontWeight: "500",
+                              transition: "background-color 0.2s",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#1b5e20")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#2e7d32")
+                            }
+                          >
+                            {isImage ? "View Image" : "Download"}
+                          </a>
+                          <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#999" }}>
+                            File {index + 1}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
         )}
       </div>

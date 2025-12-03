@@ -1,17 +1,6 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  type ChangeEvent,
-  type DragEvent,
-} from "react";
+import React, { useState, useEffect, useRef, type ChangeEvent, type DragEvent } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Upload as UploadIcon, FileText } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
@@ -21,9 +10,17 @@ import { requirementService } from "~/app/services/requirement.service";
 
 interface Document {
   _id: string;
-  student: string;
+  student: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    program?: string;
+  };
+  documentName: string;
   documents: string[];
   status: string;
+  uploadedAt: string;
 }
 
 interface Requirement {
@@ -34,6 +31,7 @@ interface Requirement {
 
 const Upload = ({ userRole, userName, onLogout }: PageProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [documentName, setDocumentName] = useState("");
   const [documentsList, setDocumentsList] = useState<Document[]>([]);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -41,9 +39,7 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
 
   const fetchDocuments = async () => {
     try {
-      const res = await documentService.student(
-        getUserFromLocalStorage()?.user?._id || ""
-      );
+      const res = await documentService.student(getUserFromLocalStorage()?.user?._id || "");
       setDocumentsList(res || []);
     } catch (err) {
       console.error("Failed to fetch documents:", err);
@@ -62,9 +58,7 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
 
       // Ensure response is an array before filtering
       const filtered = Array.isArray(response)
-        ? response.filter(
-            (req: any) => req.program === userCourse.toLowerCase()
-          )
+        ? response.filter((req: any) => req.program === userCourse.toLowerCase())
         : [];
 
       setRequirements(filtered);
@@ -92,16 +86,26 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
   const handleBrowseClick = () => fileInputRef.current?.click();
 
   const handleUpload = async () => {
-    if (!selectedFiles.length) return;
+    if (!selectedFiles.length) {
+      alert("Please select at least one file");
+      return;
+    }
+
+    if (!documentName.trim()) {
+      alert("Please enter a document name");
+      return;
+    }
 
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append("files", file));
     formData.append("student", getUserFromLocalStorage()?.user?._id || "");
+    formData.append("documentName", documentName.trim());
 
     setUploading(true);
     try {
       await documentService.create(formData);
       setSelectedFiles([]);
+      setDocumentName("");
       fetchDocuments();
       alert("Files uploaded successfully!");
     } catch (err) {
@@ -121,9 +125,7 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
         <div className="flex items-center gap-4">
           <UploadIcon className="h-10 w-10 text-primary" />
           <div>
-            <h1 className="text-3xl font-extrabold text-foreground">
-              Upload Documents
-            </h1>
+            <h1 className="text-3xl font-extrabold text-foreground">Upload Documents</h1>
             <p className="text-muted-foreground text-sm mt-1">
               Upload your files — drag and drop or browse manually
             </p>
@@ -156,15 +158,27 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Document Name Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Document Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={documentName}
+                onChange={(e) => setDocumentName(e.target.value)}
+                placeholder="e.g., School ID, Birth Certificate, etc."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
               className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition relative"
             >
               <UploadIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
-                Drop files here or click below to browse
-              </p>
+              <p className="text-muted-foreground mb-4">Drop files here or click below to browse</p>
 
               <input
                 type="file"
@@ -174,11 +188,7 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
                 className="hidden"
               />
 
-              <Button
-                onClick={handleBrowseClick}
-                disabled={uploading}
-                className="mb-2"
-              >
+              <Button onClick={handleBrowseClick} disabled={uploading} className="mb-2">
                 Browse Files
               </Button>
 
@@ -209,46 +219,60 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
         {/* Uploaded Files */}
         <Card className="shadow-lg border-gray-200">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Uploaded Files
-            </CardTitle>
+            <CardTitle className="text-lg font-semibold">Uploaded Documents</CardTitle>
           </CardHeader>
           <CardContent>
             {documentsList.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                No files uploaded yet
-              </p>
+              <p className="text-muted-foreground text-center py-8">No documents uploaded yet</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {documentsList.map((doc) =>
-                  doc.documents.map((url, idx) => {
-                    const isImage = url.match(/\.(jpeg|jpg|png|gif)$/i);
-                    return (
-                      <div
-                        key={`${doc._id}-${idx}`}
-                        className="border rounded-md p-3 flex flex-col items-center hover:shadow-lg transition"
-                      >
-                        {isImage ? (
-                          <img
-                            src={url}
-                            alt="Uploaded"
-                            className="h-32 w-32 object-cover mb-2 rounded-md"
-                          />
-                        ) : (
-                          <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
-                        )}
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          {isImage ? "View Image" : "Download File"}
-                        </a>
+              <div className="space-y-4">
+                {documentsList.map((doc) => (
+                  <div key={doc._id} className="border rounded-lg p-4 hover:shadow-lg transition">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg text-gray-800">{doc.documentName}</h3>
+                        <p className="text-sm text-gray-500">
+                          Status: <span className="font-medium capitalize">{doc.status}</span>
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </p>
                       </div>
-                    );
-                  })
-                )}
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                        {doc.documents.length} file(s)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {doc.documents.map((url, idx) => {
+                        const isImage = url.match(/\.(jpeg|jpg|png|gif)$/i);
+                        return (
+                          <div
+                            key={`${doc._id}-${idx}`}
+                            className="border rounded-md p-3 flex flex-col items-center bg-gray-50"
+                          >
+                            {isImage ? (
+                              <img
+                                src={url}
+                                alt="Uploaded"
+                                className="h-24 w-24 object-cover mb-2 rounded-md"
+                              />
+                            ) : (
+                              <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
+                            )}
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              {isImage ? "View Image" : "Download File"}
+                            </a>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

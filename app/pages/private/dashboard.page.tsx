@@ -252,14 +252,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in bg-white">
+    <div className="p-3 sm:p-6 space-y-6 animate-fade-in bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-green-700">Dashboard</h1>
-          <p className="text-green-600">Welcome back! Here's an overview of your activities.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-green-700">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-green-600">
+            Welcome back! Here's an overview of your activities.
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           {/* <Button
             variant="outline"
             className="border-green-600 text-green-600 hover:bg-green-50"
@@ -272,11 +274,11 @@ const Dashboard = () => {
               fetchAnnouncements();
             }}
             disabled={loading}
-            className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+            className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex-1 sm:flex-none text-xs sm:text-sm"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 animate-spin" />
                 Refreshing...
               </>
             ) : (

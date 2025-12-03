@@ -23,9 +23,15 @@ export function getUserFromLocalStorage() {
 
     const parsed = JSON.parse(stored);
 
-    // Adjust property check to your stored object
-    if (parsed && typeof parsed === "object" && "accessToken" in parsed) {
-      return parsed;
+    // Check for the structure returned from API: { user, accessToken, refreshToken }
+    if (parsed && typeof parsed === "object") {
+      // Handle both old and new structure
+      if ("accessToken" in parsed || "token" in parsed) {
+        return {
+          ...parsed,
+          token: parsed.accessToken || parsed.token,
+        };
+      }
     }
 
     return null;
@@ -45,10 +51,7 @@ function isTokenValid(token?: string) {
 }
 
 // Helper for authentication check
-export function isAuthenticated(
-  renderIfTrue: ReactNode,
-  renderIfFalse: ReactNode = null
-) {
+export function isAuthenticated(renderIfTrue: ReactNode, renderIfFalse: ReactNode = null) {
   return function AuthWrapper() {
     const stored = getUserFromLocalStorage();
     const valid = stored?.token && isTokenValid(stored.token);
@@ -65,12 +68,6 @@ export function isRole(
   return function RoleWrapper() {
     const stored = getUserFromLocalStorage();
     const valid = stored?.token && isTokenValid(stored.token);
-    return (
-      <>
-        {valid && stored.user?.role === requiredRole
-          ? renderIfTrue
-          : renderIfFalse}
-      </>
-    );
+    return <>{valid && stored.user?.role === requiredRole ? renderIfTrue : renderIfFalse}</>;
   };
 }

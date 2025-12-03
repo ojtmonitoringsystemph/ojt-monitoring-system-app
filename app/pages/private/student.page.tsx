@@ -74,7 +74,20 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const response = await userService.search({ role: "student" });
+      // Get logged-in user's data from localStorage
+      const userData = getUserFromLocalStorage();
+      const actualUserRole = userData?.user?.role;
+      const userProgram = userData?.user?.program;
+
+      // Build query
+      const query: any = { role: "student" };
+
+      // Coordinators should only see students from their program
+      if (actualUserRole === "coordinator" && userProgram) {
+        query.program = userProgram.toLowerCase();
+      }
+
+      const response = await userService.search(query);
       setStudents(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -106,7 +119,20 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       return;
     }
     try {
-      const response = await userService.search({ role: "student" });
+      // Get logged-in user's data from localStorage
+      const userData = getUserFromLocalStorage();
+      const actualUserRole = userData?.user?.role;
+      const userProgram = userData?.user?.program;
+
+      // Build query
+      const query: any = { role: "student" };
+
+      // Coordinators should only see students from their program
+      if (actualUserRole === "coordinator" && userProgram) {
+        query.program = userProgram.toLowerCase();
+      }
+
+      const response = await userService.search(query);
       const filtered = (Array.isArray(response) ? response : []).filter(
         (s: Student) =>
           !s.metadata?.company &&
@@ -294,21 +320,21 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-green-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-green-800">
             {userRole === "coordinator" ? "My Students" : "Students"}
           </h1>
-          <div className="flex gap-3">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm"
               onClick={() => setShowRegisterModal(true)}
             >
               <UserPlus className="h-4 w-4" /> Create Student
             </Button>
             <Button
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm"
               onClick={() => {
                 setShowModal(true);
                 setIsEditing(false);
@@ -322,82 +348,149 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         {/* Students Table */}
         <Card className="border-green-300 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-green-800">
+            <CardTitle className="text-lg sm:text-xl text-green-800">
               {userRole === "coordinator" ? "My Students" : "All Students"}
             </CardTitle>
-            <div className="relative mt-2">
+            <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 h-4 w-4" />
               <Input
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-green-300 focus:ring-green-500 focus:border-green-500"
+                className="pl-10 border-green-300 focus:ring-green-500 focus:border-green-500 text-sm"
               />
             </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-green-600">Loading students...</div>
+              <div className="text-center py-8 text-green-600 text-sm">Loading students...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-green-300">
-                      <th className="text-left p-3 font-medium text-green-700">Full Name</th>
-                      <th className="text-left p-3 font-medium text-green-700">Email</th>
-                      <th className="text-left p-3 font-medium text-green-700">Program</th>
-                      <th className="text-left p-3 font-medium text-green-700">Company</th>
-                      <th className="text-left p-3 font-medium text-green-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStudents.map((student) => (
-                      <tr key={student._id} className="border-b border-green-200 hover:bg-green-50">
-                        <td className="p-3 font-medium text-green-800">
-                          {student.firstName} {student.lastName}
-                        </td>
-                        <td className="p-3 text-green-700">{student.email}</td>
-                        <td className="p-3 text-green-700">{student.program ?? "-"}</td>
-                        <td className="p-3 text-green-700">
-                          {student.metadata?.company?.name ?? "-"}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
+              <>
+                {/* Desktop Table View (md and above) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-green-300">
+                        <th className="text-left p-3 font-medium text-green-700 text-sm">
+                          Full Name
+                        </th>
+                        <th className="text-left p-3 font-medium text-green-700 text-sm">Email</th>
+                        <th className="text-left p-3 font-medium text-green-700 text-sm">
+                          Program
+                        </th>
+                        <th className="text-left p-3 font-medium text-green-700 text-sm">
+                          Company
+                        </th>
+                        <th className="text-left p-3 font-medium text-green-700 text-sm">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.map((student) => (
+                        <tr
+                          key={student._id}
+                          className="border-b border-green-200 hover:bg-green-50"
+                        >
+                          <td className="p-3 font-medium text-green-800 text-sm">
+                            {student.firstName} {student.lastName}
+                          </td>
+                          <td className="p-3 text-green-700 text-sm">{student.email}</td>
+                          <td className="p-3 text-green-700 text-sm">{student.program ?? "-"}</td>
+                          <td className="p-3 text-green-700 text-sm">
+                            {student.metadata?.company?.name ?? "-"}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex items-center gap-1 border-green-500 text-green-600 hover:bg-green-100 text-xs"
+                                onClick={() => handleEditStudent(student)}
+                              >
+                                <Edit className="h-4 w-4" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex items-center gap-1 border-red-500 text-red-600 hover:bg-red-100 text-xs"
+                                onClick={() => handleDeleteStudent(student._id)}
+                              >
+                                <Trash2 className="h-4 w-4" /> Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {students.length === 0 && (
+                    <div className="text-center py-8 text-green-500 text-sm">
+                      No students found.
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Card View (below md) */}
+                <div className="md:hidden space-y-3">
+                  {filteredStudents.length === 0 ? (
+                    <div className="text-center py-8 text-green-500 text-sm">
+                      No students found.
+                    </div>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <Card key={student._id} className="border-l-4 border-l-green-500">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="font-semibold text-sm text-green-800">
+                                {student.firstName} {student.lastName}
+                              </h3>
+                              <p className="text-xs text-green-600 truncate">{student.email}</p>
+                            </div>
+                            <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded whitespace-nowrap">
+                              {student.program ?? "N/A"}
+                            </span>
+                          </div>
+                          <div className="pt-2 border-t border-green-200">
+                            <p className="text-xs text-green-600 mb-2">Company</p>
+                            <p className="text-sm font-medium text-green-800">
+                              {student.metadata?.company?.name ?? "Not assigned"}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 pt-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex items-center gap-1 border-green-500 text-green-600 hover:bg-green-100"
+                              className="flex-1 flex items-center justify-center gap-1 border-green-500 text-green-600 hover:bg-green-100 text-xs"
                               onClick={() => handleEditStudent(student)}
                             >
-                              <Edit className="h-4 w-4" /> Edit
+                              <Edit className="h-3.5 w-3.5" /> Edit
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex items-center gap-1 border-red-500 text-red-600 hover:bg-red-100"
+                              className="flex-1 flex items-center justify-center gap-1 border-red-500 text-red-600 hover:bg-red-100 text-xs"
                               onClick={() => handleDeleteStudent(student._id)}
                             >
-                              <Trash2 className="h-4 w-4" /> Delete
+                              <Trash2 className="h-3.5 w-3.5" /> Delete
                             </Button>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {students.length === 0 && (
-                  <div className="text-center py-8 text-green-500">No students found.</div>
-                )}
-              </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
         {/* Assign Student Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
-              <h2 className="text-xl font-bold text-green-800">
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50 p-4">
+            <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-4 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-lg sm:text-xl font-bold text-green-800">
                 {isEditing ? "Edit Student Assignment" : "Assign Student to Company"}
               </h2>
 
@@ -407,7 +500,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     placeholder="Search student..."
                     value={modalSearchTerm}
                     onChange={(e) => setModalSearchTerm(e.target.value)}
-                    className="border-green-300 focus:ring-green-500 focus:border-green-500"
+                    className="border-green-300 focus:ring-green-500 focus:border-green-500 text-sm"
                   />
                   {searchResults.length > 0 && (
                     <div className="border border-green-300 rounded-md p-2 max-h-40 overflow-y-auto">
@@ -415,7 +508,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                         <div
                           key={s._id}
                           onClick={() => setFormData((prev) => ({ ...prev, userId: s._id }))}
-                          className={`p-2 cursor-pointer rounded hover:bg-green-50 ${
+                          className={`p-2 cursor-pointer rounded hover:bg-green-50 text-sm ${
                             formData.userId === s._id ? "bg-green-100" : ""
                           }`}
                         >
@@ -490,18 +583,20 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
         {/* Create Student Account Modal */}
         {showRegisterModal && (
-          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-bold text-green-800 mb-4">Create Student Account</h2>
+          <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50 p-4">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-lg sm:text-xl font-bold text-green-800 mb-4">
+                Create Student Account
+              </h2>
 
-              <form onSubmit={handleRegister} className="space-y-4">
+              <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
                 <Input
                   type="text"
                   name="userName"
                   placeholder="Username"
                   value={registerFormData.userName}
                   onChange={handleRegisterChange}
-                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  className="w-full border border-green-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
                 />
 
                 <Input
