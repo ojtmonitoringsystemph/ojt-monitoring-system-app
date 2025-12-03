@@ -10,6 +10,7 @@ import {
   BookOpen,
   MessageSquare,
   ChevronDown,
+  Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +89,12 @@ const navigation: NavigationItem[] = [
     href: "/announcement",
     icon: CheckSquare,
     roles: ["coordinator", "admin"],
+  },
+  {
+    name: "Archives",
+    href: "/archives",
+    icon: Archive,
+    roles: ["admin"],
   },
 ];
 
