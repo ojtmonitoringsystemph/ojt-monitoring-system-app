@@ -56,7 +56,7 @@ const Login = ({ onLogin }: LoginProps) => {
             {/* Show on mobile only */}
             <img src="intern.gif" alt="" className="w-400 mb-6" />
             <h1 className="text-3xl font-bold text-green-600">On-The-Job</h1>
-            <p className="text-gray-600 mt-2">Training Monitoring</p>
+            <p className="text-gray-600 mt-2">Training Monitoring System</p>
           </div>
           <p className="text-gray-500 mt-2 text-center">Sign in to continue</p>
           <div className="space-y-5">
