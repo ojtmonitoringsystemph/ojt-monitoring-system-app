@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
 import { Button } from "@/components/atoms/button";
 import CompanyCard from "@/components/templates/cards/company.card";
-import { Building2, Plus, Pencil } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2 } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { companyService } from "@/services/company.service";
 
@@ -53,9 +53,7 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
   }, []);
 
   // Handle form input
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -123,6 +121,23 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
     });
   };
 
+  // Delete company
+  const handleDelete = async (companyId: string) => {
+    if (!confirm("Are you sure you want to delete this company? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await companyService.delete(companyId);
+      // Remove company from local state
+      setCompanies((prev) => prev.filter((c) => c._id !== companyId));
+      alert("Company deleted successfully!");
+    } catch (error: any) {
+      console.error("Error deleting company:", error);
+      alert(error?.response?.data?.message || "Failed to delete company");
+    }
+  };
+
   return (
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
       <div className="p-6 space-y-6 bg-white">
@@ -171,13 +186,22 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
                     totalInterns: 0,
                   }}
                 />
-                <button
-                  onClick={() => handleEdit(company)}
-                  className="absolute top-2 right-2 p-2 bg-white border border-green-200 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition"
-                  title="Edit Company"
-                >
-                  <Pencil className="h-4 w-4 text-green-700" />
-                </button>
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => handleEdit(company)}
+                    className="p-2 bg-white border border-green-200 rounded-full shadow-sm"
+                    title="Edit Company"
+                  >
+                    <Pencil className="h-4 w-4 text-green-700" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(company._id)}
+                    className="p-2 bg-white border border-red-200 rounded-full shadow-sm"
+                    title="Delete Company"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -242,10 +266,7 @@ const Companies = ({ userRole, userName, onLogout }: PageProps) => {
                 >
                   Cancel
                 </Button>
-                <Button
-                  className="bg-green-600 text-white hover:bg-green-700"
-                  onClick={handleSave}
-                >
+                <Button className="bg-green-600 text-white hover:bg-green-700" onClick={handleSave}>
                   {editingCompany ? "Update" : "Save"}
                 </Button>
               </div>

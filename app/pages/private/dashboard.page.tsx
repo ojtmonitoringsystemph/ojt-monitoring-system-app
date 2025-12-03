@@ -15,12 +15,7 @@ import { useEffect, useState } from "react";
 import { userService } from "~/app/services/user.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 import { announcementService } from "@/services/announcement.service"; // Import announcement service
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
 
 interface Announcement {
@@ -43,9 +38,7 @@ const Dashboard = () => {
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [dashboard, setDashboard] = useState<any>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [userRole, setUserRole] = useState(
-    getUserFromLocalStorage()?.user?.role || ""
-  );
+  const [userRole, setUserRole] = useState(getUserFromLocalStorage()?.user?.role || "");
 
   const fetchMyDashboard = async () => {
     try {
@@ -69,10 +62,16 @@ const Dashboard = () => {
   const fetchAnnouncements = async () => {
     try {
       setAnnouncementsLoading(true);
-      const response = await announcementService.getAll();
-      // Get latest 3 announcements
-      const latestAnnouncements = response.slice(0, 3);
-      setAnnouncements(latestAnnouncements || []);
+      const userData = getUserFromLocalStorage();
+      const userProgram = userData?.user?.program;
+
+      // Pass user's program as parameter for filtering
+      const params = userProgram ? { program: userProgram } : {};
+      const response = await announcementService.getAll(params);
+
+      // For students, show all announcements. For others, show latest 3
+      const announcementsToShow = userRole === "student" ? response : response.slice(0, 3);
+      setAnnouncements(announcementsToShow || []);
     } catch (error: any) {
       console.error("Failed to fetch announcements:", error);
       // Don't show error if it's just unauthorized - user might not have access
@@ -80,7 +79,6 @@ const Dashboard = () => {
       setAnnouncementsLoading(false);
     }
   };
-
   useEffect(() => {
     if (userRole) {
       fetchMyDashboard();
@@ -183,14 +181,6 @@ const Dashboard = () => {
     if (userRole === "student") {
       return [
         {
-          title: "Total Announcements",
-          value: dashboard?.totalAnnouncements || 0,
-          description: "Latest posted updates",
-          icon: Megaphone,
-          trend: "up" as const,
-          trendValue: "+1",
-        },
-        {
           title: "Total Tasks",
           value: dashboard?.totalTasks || 0,
           description: "Tasks assigned to you",
@@ -201,8 +191,8 @@ const Dashboard = () => {
         {
           title: "User Role",
           value:
-            dashboard?.userRole?.charAt(0).toUpperCase() +
-              dashboard?.userRole?.slice(1) || "Student",
+            dashboard?.userRole?.charAt(0).toUpperCase() + dashboard?.userRole?.slice(1) ||
+            "Student",
           description: "Current access level",
           icon: UserCircle,
           trend: "neutral" as const,
@@ -267,9 +257,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-green-700">Dashboard</h1>
-          <p className="text-green-600">
-            Welcome back! Here's an overview of your activities.
-          </p>
+          <p className="text-green-600">Welcome back! Here's an overview of your activities.</p>
         </div>
         <div className="flex gap-2">
           {/* <Button
@@ -302,10 +290,7 @@ const Dashboard = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-32 bg-green-50 rounded-lg animate-pulse"
-            />
+            <div key={i} className="h-32 bg-green-50 rounded-lg animate-pulse" />
           ))}
         </div>
       ) : (
@@ -332,7 +317,8 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Announcements Section */}
+      {/* Announcements Section - Only for admin and coordinator */}
+
       <div className="grid grid-cols-1  gap-6">
         {/* Left side - 2/3 width for other content (you can add other dashboard sections here) */}
 
@@ -364,9 +350,7 @@ const Dashboard = () => {
               <div className="text-center py-8">
                 <Megaphone className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">No announcements yet</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Check back later for updates
-                </p>
+                <p className="text-sm text-gray-400 mt-1">Check back later for updates</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -403,7 +387,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {announcements.length > 0 && (
+            {announcements.length > 0 && userRole !== "student" && (
               <div className="mt-6 pt-4 border-t">
                 <Button
                   variant="outline"

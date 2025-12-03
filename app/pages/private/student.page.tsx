@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import {
@@ -16,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/select";
-import { Plus, Search, Edit, UserPlus } from "lucide-react";
+import { Plus, Search, Edit, UserPlus, Trash2 } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { userService } from "~/app/services/user.service";
 import { companyService } from "~/app/services/company.service";
@@ -200,9 +195,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       fetchStudents(); // Refresh the student list
     } catch (err: any) {
       console.error(err);
-      setRegisterError(
-        err.response?.data?.message || "Registration failed. Please try again."
-      );
+      setRegisterError(err.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setRegisterLoading(false);
     }
@@ -223,9 +216,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     setRegisterError(null);
   };
 
-  const handleRegisterChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
 
     if (type === "checkbox") {
@@ -274,6 +265,22 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
       deploymentDate: student.metadata?.deploymentDate ?? "",
       status: student.metadata?.status ?? "scheduled",
     });
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await userService.delete(studentId);
+      // Remove student from local state
+      setStudents((prev) => prev.filter((s) => s._id !== studentId));
+      alert("Student deleted successfully!");
+    } catch (error: any) {
+      console.error("Error deleting student:", error);
+      alert(error?.response?.data?.message || "Failed to delete student");
+    }
   };
 
   const filteredStudents = students.filter((s) => {
@@ -330,65 +337,56 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-green-600">
-                Loading students...
-              </div>
+              <div className="text-center py-8 text-green-600">Loading students...</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-green-300">
-                      <th className="text-left p-3 font-medium text-green-700">
-                        Full Name
-                      </th>
-                      <th className="text-left p-3 font-medium text-green-700">
-                        Email
-                      </th>
-                      <th className="text-left p-3 font-medium text-green-700">
-                        Program
-                      </th>
-                      <th className="text-left p-3 font-medium text-green-700">
-                        Company
-                      </th>
-                      <th className="text-left p-3 font-medium text-green-700">
-                        Actions
-                      </th>
+                      <th className="text-left p-3 font-medium text-green-700">Full Name</th>
+                      <th className="text-left p-3 font-medium text-green-700">Email</th>
+                      <th className="text-left p-3 font-medium text-green-700">Program</th>
+                      <th className="text-left p-3 font-medium text-green-700">Company</th>
+                      <th className="text-left p-3 font-medium text-green-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map((student) => (
-                      <tr
-                        key={student._id}
-                        className="border-b border-green-200 hover:bg-green-50"
-                      >
+                      <tr key={student._id} className="border-b border-green-200 hover:bg-green-50">
                         <td className="p-3 font-medium text-green-800">
                           {student.firstName} {student.lastName}
                         </td>
                         <td className="p-3 text-green-700">{student.email}</td>
-                        <td className="p-3 text-green-700">
-                          {student.program ?? "-"}
-                        </td>
+                        <td className="p-3 text-green-700">{student.program ?? "-"}</td>
                         <td className="p-3 text-green-700">
                           {student.metadata?.company?.name ?? "-"}
                         </td>
                         <td className="p-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex items-center gap-1 border-green-500 text-green-600 hover:bg-green-100"
-                            onClick={() => handleEditStudent(student)}
-                          >
-                            <Edit className="h-4 w-4" /> Edit
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex items-center gap-1 border-green-500 text-green-600 hover:bg-green-100"
+                              onClick={() => handleEditStudent(student)}
+                            >
+                              <Edit className="h-4 w-4" /> Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex items-center gap-1 border-red-500 text-red-600 hover:bg-red-100"
+                              onClick={() => handleDeleteStudent(student._id)}
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 {students.length === 0 && (
-                  <div className="text-center py-8 text-green-500">
-                    No students found.
-                  </div>
+                  <div className="text-center py-8 text-green-500">No students found.</div>
                 )}
               </div>
             )}
@@ -400,9 +398,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 space-y-4">
               <h2 className="text-xl font-bold text-green-800">
-                {isEditing
-                  ? "Edit Student Assignment"
-                  : "Assign Student to Company"}
+                {isEditing ? "Edit Student Assignment" : "Assign Student to Company"}
               </h2>
 
               {!isEditing && (
@@ -418,9 +414,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                       {searchResults.map((s) => (
                         <div
                           key={s._id}
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, userId: s._id }))
-                          }
+                          onClick={() => setFormData((prev) => ({ ...prev, userId: s._id }))}
                           className={`p-2 cursor-pointer rounded hover:bg-green-50 ${
                             formData.userId === s._id ? "bg-green-100" : ""
                           }`}
@@ -435,9 +429,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
               <Select
                 value={formData.companyId}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({ ...prev, companyId: val }))
-                }
+                onValueChange={(val) => setFormData((prev) => ({ ...prev, companyId: val }))}
               >
                 <SelectTrigger className="border-green-300 focus:ring-green-500 focus:border-green-500">
                   <SelectValue placeholder="Select company" />
@@ -465,9 +457,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
               <Select
                 value={formData.status}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({ ...prev, status: val }))
-                }
+                onValueChange={(val) => setFormData((prev) => ({ ...prev, status: val }))}
               >
                 <SelectTrigger className="border-green-300 focus:ring-green-500 focus:border-green-500">
                   <SelectValue placeholder="Select status" />
@@ -502,9 +492,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         {showRegisterModal && (
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-bold text-green-800 mb-4">
-                Create Student Account
-              </h2>
+              <h2 className="text-xl font-bold text-green-800 mb-4">Create Student Account</h2>
 
               <form onSubmit={handleRegister} className="space-y-4">
                 <Input
@@ -593,9 +581,7 @@ const Students: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                 </label>
 
                 {registerError && (
-                  <p className="text-red-600 text-sm text-center">
-                    {registerError}
-                  </p>
+                  <p className="text-red-600 text-sm text-center">{registerError}</p>
                 )}
 
                 <div className="flex justify-end gap-3 pt-2">

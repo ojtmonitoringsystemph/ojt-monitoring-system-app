@@ -1,11 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import {
@@ -109,6 +104,26 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     fetchCompanies();
   }, []);
 
+  // 🗑️ Delete enrollment
+  const handleDeleteEnrollment = async (studentId: string) => {
+    if (
+      !confirm("Are you sure you want to delete this enrollment? This action cannot be undone.")
+    ) {
+      return;
+    }
+
+    try {
+      // Use unassign company service to remove the enrollment
+      await userService.unassignCompany({ userId: studentId });
+      // Remove student from local state
+      setStudents((prev) => prev.filter((s) => s._id !== studentId));
+      alert("Enrollment deleted successfully!");
+    } catch (error: any) {
+      console.error("Error deleting enrollment:", error);
+      alert(error?.response?.data?.message || "Failed to delete enrollment");
+    }
+  };
+
   // ✅ Debounced search for students (API-based)
   useEffect(() => {
     const fetchStudents = async () => {
@@ -208,14 +223,9 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      `${student.firstName} ${student.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      student.metadata?.company?.name
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || student.metadata?.status === statusFilter;
+      `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.metadata?.company?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || student.metadata?.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -293,13 +303,9 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             {searchResults.map((s) => (
               <div
                 key={s._id}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, userId: s._id }))
-                }
+                onClick={() => setFormData((prev) => ({ ...prev, userId: s._id }))}
                 className={`p-2 cursor-pointer rounded hover:bg-green-50 transition-colors ${
-                  formData.userId === s._id
-                    ? "bg-green-50 border border-green-300"
-                    : ""
+                  formData.userId === s._id ? "bg-green-50 border border-green-300" : ""
                 }`}
               >
                 <div className="font-medium">
@@ -341,13 +347,9 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
             {coordinatorResults.map((c) => (
               <div
                 key={c._id}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, coordinatorId: c._id }))
-                }
+                onClick={() => setFormData((prev) => ({ ...prev, coordinatorId: c._id }))}
                 className={`p-2 cursor-pointer rounded hover:bg-green-50 transition-colors ${
-                  formData.coordinatorId === c._id
-                    ? "bg-green-50 border border-green-300"
-                    : ""
+                  formData.coordinatorId === c._id ? "bg-green-50 border border-green-300" : ""
                 }`}
               >
                 <div className="font-medium">
@@ -362,9 +364,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         {/* Company Select */}
         <Select
           value={formData.companyId}
-          onValueChange={(val) =>
-            setFormData((prev) => ({ ...prev, companyId: val }))
-          }
+          onValueChange={(val) => setFormData((prev) => ({ ...prev, companyId: val }))}
         >
           <SelectTrigger className="border-green-300 focus:border-green-500">
             <SelectValue placeholder="Select company" />
@@ -382,18 +382,14 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
         <Input
           type="date"
           value={formData.deploymentDate}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, deploymentDate: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, deploymentDate: e.target.value }))}
           className="border-green-300 focus:border-green-500"
         />
 
         {/* Status */}
         <Select
           value={formData.status}
-          onValueChange={(val) =>
-            setFormData((prev) => ({ ...prev, status: val }))
-          }
+          onValueChange={(val) => setFormData((prev) => ({ ...prev, status: val }))}
         >
           <SelectTrigger className="border-green-300 focus:border-green-500">
             <SelectValue placeholder="Select status" />
@@ -413,10 +409,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
           >
             Cancel
           </Button>
-          <Button
-            className="bg-green-600 text-white hover:bg-green-700"
-            onClick={onSave}
-          >
+          <Button className="bg-green-600 text-white hover:bg-green-700" onClick={onSave}>
             Save
           </Button>
         </div>
@@ -428,9 +421,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
     <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
       <div className="p-6 space-y-6 bg-white">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-green-700">
-            Student Enrollment
-          </h1>
+          <h1 className="text-3xl font-bold text-green-700">Student Enrollment</h1>
           <Button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
@@ -478,8 +469,7 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     studentName: `${student.firstName} ${student.lastName}`,
                     studentId: student._id,
                     studentAvatar: student.avatar || "",
-                    companyName:
-                      student.metadata?.company?.name || "Unassigned",
+                    companyName: student.metadata?.company?.name || "Unassigned",
                     companyId: student.metadata?.company?._id || "",
                     coordinatorName: student.metadata?.coordinator
                       ? `${student.metadata.coordinator.firstName} ${student.metadata.coordinator.lastName}`
@@ -496,23 +486,19 @@ const Enrollment: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
                     setFormData({
                       userId: student._id,
                       companyId: student.metadata?.company?._id || "",
-                      coordinatorId:
-                        student.metadata?.coordinator?._id ||
-                        getAuth?.user?._id,
+                      coordinatorId: student.metadata?.coordinator?._id || getAuth?.user?._id,
                       deploymentDate: student.metadata?.deploymentDate || "",
                       status: student.metadata?.status || "scheduled",
                     });
                     setShowEditModal(true);
                   }}
-                  onDelete={() => {}}
+                  onDelete={() => handleDeleteEnrollment(student._id)}
                 />
               ))}
             </div>
 
             {!loading && filteredStudents.length === 0 && (
-              <div className="text-center py-8 text-green-600">
-                No enrolled students found.
-              </div>
+              <div className="text-center py-8 text-green-600">No enrolled students found.</div>
             )}
           </CardContent>
         </Card>

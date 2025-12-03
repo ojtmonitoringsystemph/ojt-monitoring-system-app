@@ -1,20 +1,8 @@
 import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
-import {
-  Megaphone,
-  Plus,
-  Edit,
-  Trash2,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { Megaphone, Plus, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { type PageProps } from "@/types/page.type";
 import { announcementService } from "@/services/announcement.service";
 import { useEffect, useState } from "react";
@@ -27,6 +15,13 @@ import {
 } from "@/components/atoms/dialog";
 import { Input } from "@/components/atoms/input";
 import { Textarea } from "@/components/atoms/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 
 interface Announcement {
@@ -35,6 +30,7 @@ interface Announcement {
   content: string;
   createdAt: string;
   updatedAt: string;
+  targetProgram?: string;
   createdBy: {
     _id: string;
     name?: string;
@@ -49,18 +45,42 @@ interface Toast {
   message: string;
 }
 
-const Announcements: React.FC<PageProps> = ({
-  userRole,
-  userName,
-  onLogout,
-}) => {
+const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
+  // Access control - only admin and coordinator can access this page
+  if (userRole === "student") {
+    return (
+      <PageLayout userRole={userRole} userName={userName} onLogout={onLogout}>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="w-full max-w-md">
+              <CardHeader className="text-center">
+                <div className="mx-auto h-12 w-12 text-red-500 mb-4">
+                  <XCircle className="h-12 w-12" />
+                </div>
+                <CardTitle className="text-xl text-red-600">Access Denied</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-muted-foreground">
+                  You don't have permission to access this page. This section is only available to
+                  administrators and coordinators.
+                </p>
+                <Button onClick={() => window.history.back()} className="w-full">
+                  Go Back
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedAnnouncement, setSelectedAnnouncement] =
-    useState<Announcement | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const userId = getUserFromLocalStorage()?.user?._id;
 
   // Toast state
@@ -69,13 +89,10 @@ const Announcements: React.FC<PageProps> = ({
   // Form states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [targetProgram, setTargetProgram] = useState("all");
 
   // Show toast function
-  const showToast = (
-    type: "success" | "error",
-    title: string,
-    message: string
-  ) => {
+  const showToast = (type: "success" | "error", title: string, message: string) => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, type, title, message }]);
 
@@ -99,15 +116,16 @@ const Announcements: React.FC<PageProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      const response = await announcementService.getAll();
+      const userData = getUserFromLocalStorage();
+      const userProgram = userData?.user?.program;
+
+      // Pass user's program as parameter for filtering
+      const params = userProgram ? { program: userProgram } : {};
+      const response = await announcementService.getAll(params);
       setAnnouncements(response || []);
     } catch (err) {
       setError("Failed to load announcements");
-      showToast(
-        "error",
-        "Error",
-        "Failed to load announcements. Please try again."
-      );
+      showToast("error", "Error", "Failed to load announcements. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -115,20 +133,21 @@ const Announcements: React.FC<PageProps> = ({
 
   const handleCreateAnnouncement = async () => {
     try {
-      await announcementService.create({ title, content });
+      await announcementService.create({
+        title,
+        content,
+        targetProgram: targetProgram,
+      });
 
       showToast("success", "Success", "Announcement created successfully.");
 
       setIsDialogOpen(false);
       setTitle("");
       setContent("");
+      setTargetProgram("all");
       fetchAnnouncements(); // Refresh list
     } catch (error) {
-      showToast(
-        "error",
-        "Error",
-        "Failed to create announcement. Please try again."
-      );
+      showToast("error", "Error", "Failed to create announcement. Please try again.");
     }
   };
 
@@ -139,6 +158,7 @@ const Announcements: React.FC<PageProps> = ({
       await announcementService.patch(selectedAnnouncement._id, {
         title,
         content,
+        targetProgram,
       });
 
       showToast("success", "Success", "Announcement updated successfully.");
@@ -149,11 +169,7 @@ const Announcements: React.FC<PageProps> = ({
       setContent("");
       fetchAnnouncements(); // Refresh list
     } catch (error) {
-      showToast(
-        "error",
-        "Error",
-        "Failed to update announcement. Please try again."
-      );
+      showToast("error", "Error", "Failed to update announcement. Please try again.");
     }
   };
 
@@ -169,11 +185,7 @@ const Announcements: React.FC<PageProps> = ({
 
       fetchAnnouncements(); // Refresh list
     } catch (error) {
-      showToast(
-        "error",
-        "Error",
-        "Failed to delete announcement. Please try again."
-      );
+      showToast("error", "Error", "Failed to delete announcement. Please try again.");
     }
   };
 
@@ -181,6 +193,7 @@ const Announcements: React.FC<PageProps> = ({
     setSelectedAnnouncement(announcement);
     setTitle(announcement.title);
     setContent(announcement.content);
+    setTargetProgram(announcement.targetProgram || "all");
     setIsEditDialogOpen(true);
   };
 
@@ -222,8 +235,7 @@ const Announcements: React.FC<PageProps> = ({
     color: "white",
     padding: "1rem",
     borderRadius: "0.375rem",
-    boxShadow:
-      "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
     display: "flex",
     alignItems: "flex-start",
     gap: "0.75rem",
@@ -263,9 +275,7 @@ const Announcements: React.FC<PageProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Megaphone className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Announcements
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
             </div>
           </div>
           <div className="flex justify-center items-center h-64">
@@ -283,9 +293,7 @@ const Announcements: React.FC<PageProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Megaphone className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Announcements
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
             </div>
           </div>
           <div className="flex justify-center items-center h-64">
@@ -349,9 +357,7 @@ const Announcements: React.FC<PageProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Megaphone className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">
-                Announcements
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
             </div>
 
             {/* Create Announcement Dialog */}
@@ -390,16 +396,28 @@ const Announcements: React.FC<PageProps> = ({
                       rows={5}
                     />
                   </div>
+
+                  <div>
+                    <label htmlFor="targetProgram" className="text-sm font-medium">
+                      Target Program
+                    </label>
+                    <Select value={targetProgram} onValueChange={setTargetProgram}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select target program" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Programs</SelectItem>
+                        <SelectItem value="bsit">BSIT Only</SelectItem>
+                        <SelectItem value="bsba">BSBA Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateAnnouncement}>
-                      Create Announcement
-                    </Button>
+                    <Button onClick={handleCreateAnnouncement}>Create Announcement</Button>
                   </div>
                 </div>
               </DialogContent>
@@ -436,16 +454,28 @@ const Announcements: React.FC<PageProps> = ({
                     rows={5}
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="edit-targetProgram" className="text-sm font-medium">
+                    Target Program
+                  </label>
+                  <Select value={targetProgram} onValueChange={setTargetProgram}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select target program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Programs</SelectItem>
+                      <SelectItem value="bsit">BSIT Only</SelectItem>
+                      <SelectItem value="bsba">BSBA Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditDialogOpen(false)}
-                  >
+                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleUpdateAnnouncement}>
-                    Update Announcement
-                  </Button>
+                  <Button onClick={handleUpdateAnnouncement}>Update Announcement</Button>
                 </div>
               </div>
             </DialogContent>
@@ -468,42 +498,35 @@ const Announcements: React.FC<PageProps> = ({
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">
-                          {announcement.title}
-                        </h3>
+                        <h3 className="font-semibold text-lg">{announcement.title}</h3>
                         <div className="text-sm text-muted-foreground mt-1">
                           By {getAuthorName(announcement.createdBy)} •{" "}
                           {formatDate(announcement.createdAt)}
-                          {announcement.updatedAt !==
-                            announcement.createdAt && (
+                          {announcement.updatedAt !== announcement.createdAt && (
                             <span className="ml-2">(Edited)</span>
                           )}
                         </div>
                       </div>
 
                       {/* Action buttons for creator */}
-                      {isCreator(announcement) && (
-                        <div className="flex items-center gap-2 ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditClick(announcement)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleDeleteAnnouncement(announcement._id)
-                            }
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(announcement)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteAnnouncement(announcement._id)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-muted-foreground whitespace-pre-wrap">
                       {announcement.content}

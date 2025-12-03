@@ -7,4 +7,5 @@ export const companyService = {
     api.get(`/company/${id}`, params ?? {}, { withAuth: true }),
   patch: (data: any) => api.patch(`/company`, data, { withAuth: true }),
   create: (data: any) => api.post("/company", data, { withAuth: true }),
+  delete: (id: string) => api.delete(`/company/${id}`, { withAuth: true }),
 };

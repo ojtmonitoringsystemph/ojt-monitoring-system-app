@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/avatar";
@@ -21,11 +16,14 @@ interface CoordinatorCardProps {
     studentsAssigned: number;
     specialization: string;
     status: "active" | "inactive";
+    program?: string;
   };
   onEdit: (id: string) => void;
+  onDelete?: (id: string) => void;
+  userRole?: string;
 }
 
-const CoordinatorCard = ({ coordinator, onEdit }: CoordinatorCardProps) => {
+const CoordinatorCard = ({ coordinator, onEdit, onDelete, userRole }: CoordinatorCardProps) => {
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -48,25 +46,31 @@ const CoordinatorCard = ({ coordinator, onEdit }: CoordinatorCardProps) => {
             <div>
               <CardTitle className="text-lg">{coordinator.name}</CardTitle>
               <div className="flex items-center gap-2 mt-1">
-                <Badge
-                  variant={
-                    coordinator.status === "active" ? "default" : "secondary"
-                  }
-                >
+                <Badge variant={coordinator.status === "active" ? "default" : "secondary"}>
                   {coordinator.status}
                 </Badge>
-                {/* <Badge variant="outline">{coordinator.department}</Badge> */}
+                {coordinator.program && coordinator.program !== "N/A" && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                    {coordinator.program.toUpperCase()}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
           <div className="flex gap-2">
-            {/* <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(coordinator.id)}
-            >
+            <Button variant="outline" size="sm" onClick={() => onEdit(coordinator.id)}>
               <Edit className="h-4 w-4" />
-            </Button> */}
+            </Button>
+            {onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(coordinator.id)}
+                className="border-red-500 text-red-600 hover:bg-red-100"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>

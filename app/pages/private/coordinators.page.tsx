@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PageLayout from "@/components/templates/layout/page.layout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import {
@@ -32,20 +27,16 @@ interface Coordinator {
   status?: string;
   avatar?: string;
   location?: string;
+  program?: "bsit" | "bsba";
 }
 
-const Coordinators: React.FC<PageProps> = ({
-  userRole,
-  userName,
-  onLogout,
-}) => {
+const Coordinators: React.FC<PageProps> = ({ userRole, userName, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
-  const [editingCoordinator, setEditingCoordinator] =
-    useState<Coordinator | null>(null);
+  const [editingCoordinator, setEditingCoordinator] = useState<Coordinator | null>(null);
 
   // Coordinator registration form state (changed from student)
   const [registerFormData, setRegisterFormData] = useState({
@@ -56,6 +47,7 @@ const Coordinators: React.FC<PageProps> = ({
     role: "coordinator", // Changed to coordinator
     email: "",
     password: "",
+    program: "",
     department: "",
     specialization: "",
     phone: "",
@@ -134,9 +126,7 @@ const Coordinators: React.FC<PageProps> = ({
       fetchCoordinators(); // Refresh the coordinator list
     } catch (err: any) {
       console.error(err);
-      setRegisterError(
-        err.response?.data?.message || "Registration failed. Please try again."
-      );
+      setRegisterError(err.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setRegisterLoading(false);
     }
@@ -151,6 +141,7 @@ const Coordinators: React.FC<PageProps> = ({
       role: "coordinator",
       email: "",
       password: "",
+      program: "",
       department: "",
       specialization: "",
       phone: "",
@@ -159,9 +150,7 @@ const Coordinators: React.FC<PageProps> = ({
     setRegisterError(null);
   };
 
-  const handleRegisterChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
 
     if (type === "checkbox") {
@@ -205,6 +194,7 @@ const Coordinators: React.FC<PageProps> = ({
       role: "coordinator",
       email: coordinator.email,
       password: "", // Password not shown for editing
+      program: coordinator.program || "",
       department: coordinator.department || "",
       specialization: coordinator.specialization || "",
       phone: coordinator.phone || "",
@@ -213,8 +203,22 @@ const Coordinators: React.FC<PageProps> = ({
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    setCoordinators((prev) => prev.filter((c) => c._id !== id));
+  const handleDeleteCoordinator = async (coordinatorId: string) => {
+    if (
+      !confirm("Are you sure you want to delete this coordinator? This action cannot be undone.")
+    ) {
+      return;
+    }
+
+    try {
+      await userService.delete(coordinatorId);
+      // Remove coordinator from local state
+      setCoordinators((prev) => prev.filter((c) => c._id !== coordinatorId));
+      alert("Coordinator deleted successfully!");
+    } catch (error: any) {
+      console.error("Error deleting coordinator:", error);
+      alert(error?.response?.data?.message || "Failed to delete coordinator");
+    }
   };
 
   return (
@@ -247,9 +251,7 @@ const Coordinators: React.FC<PageProps> = ({
 
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-green-600">
-                Loading coordinators...
-              </div>
+              <div className="text-center py-8 text-green-600">Loading coordinators...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -264,22 +266,20 @@ const Coordinators: React.FC<PageProps> = ({
                         department: coordinator.department || "N/A",
                         specialization: coordinator.specialization || "N/A",
                         studentsAssigned: 0,
-                        status:
-                          coordinator.status === "inactive"
-                            ? "inactive"
-                            : "active",
+                        status: coordinator.status === "inactive" ? "inactive" : "active",
                         avatar: coordinator.avatar || "",
                         location: coordinator.location || "",
+                        program: coordinator.program || "N/A",
                       }}
                       onEdit={() => handleEdit(coordinator)}
+                      onDelete={() => handleDeleteCoordinator(coordinator._id)}
+                      userRole={userRole}
                     />
                   ))}
                 </div>
 
                 {coordinators.length === 0 && !loading && (
-                  <div className="text-center py-8 text-green-600">
-                    No coordinators found.
-                  </div>
+                  <div className="text-center py-8 text-green-600">No coordinators found.</div>
                 )}
               </>
             )}
@@ -291,9 +291,7 @@ const Coordinators: React.FC<PageProps> = ({
           <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
             <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-green-200">
               <h2 className="text-xl font-bold text-green-800 mb-4">
-                {editingCoordinator
-                  ? "Edit Coordinator"
-                  : "Create Coordinator Account"}
+                {editingCoordinator ? "Edit Coordinator" : "Create Coordinator Account"}
               </h2>
 
               <form onSubmit={handleRegister} className="space-y-4">
@@ -356,6 +354,21 @@ const Coordinators: React.FC<PageProps> = ({
                   />
                 )}
 
+                <Select
+                  value={registerFormData.program}
+                  onValueChange={(val) =>
+                    setRegisterFormData((prev) => ({ ...prev, program: val }))
+                  }
+                >
+                  <SelectTrigger className="border-green-300 focus:ring-green-500 focus:border-green-500">
+                    <SelectValue placeholder="Select Program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bsit">BSIT</SelectItem>
+                    <SelectItem value="bsba">BSBA</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 {/* <Input
                   type="text"
                   name="phone"
@@ -402,9 +415,7 @@ const Coordinators: React.FC<PageProps> = ({
                 )}
 
                 {registerError && (
-                  <p className="text-red-600 text-sm text-center">
-                    {registerError}
-                  </p>
+                  <p className="text-red-600 text-sm text-center">{registerError}</p>
                 )}
 
                 <div className="flex justify-end gap-3 pt-2">

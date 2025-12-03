@@ -87,7 +87,7 @@ const navigation: NavigationItem[] = [
     name: "Announcement",
     href: "/announcement",
     icon: CheckSquare,
-    roles: ["coordinator", "student"],
+    roles: ["coordinator", "admin"],
   },
 ];
 
@@ -99,22 +99,14 @@ interface AppSidebarProps {
 export default function SidebarV2({ isOpen, setIsOpen }: AppSidebarProps) {
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [userRole, setUserRole] = useState<"admin" | "coordinator" | "student">(
-    "student"
-  );
+  const [userRole, setUserRole] = useState<"admin" | "coordinator" | "student">("student");
 
   useEffect(() => {
-    const savedRole = localStorage.getItem("role") as
-      | "admin"
-      | "coordinator"
-      | "student"
-      | null;
+    const savedRole = localStorage.getItem("role") as "admin" | "coordinator" | "student" | null;
     if (savedRole) setUserRole(savedRole);
   }, []);
 
-  const roleNavigation = navigation.filter((item) =>
-    item.roles?.includes(userRole)
-  );
+  const roleNavigation = navigation.filter((item) => item.roles?.includes(userRole));
 
   const toggleItem = (name: string) => {
     setExpandedItems((prev) =>
@@ -128,9 +120,7 @@ export default function SidebarV2({ isOpen, setIsOpen }: AppSidebarProps) {
       <div
         className={cn(
           "fixed inset-0 z-20 bg-black/40 backdrop-blur-sm transition-opacity sm:hidden",
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setIsOpen(false)}
       />
