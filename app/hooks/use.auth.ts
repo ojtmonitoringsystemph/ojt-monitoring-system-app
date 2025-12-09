@@ -45,7 +45,16 @@ export function useAuth() {
   };
 
   const logout = () => {
-    uselocalStorage.remove("auth");
+    // Clear all localStorage data
+    uselocalStorage.clear();
+
+    // Clear all sessionStorage data
+    sessionStorage.clear();
+
+    // Clear auth-related cookies if they exist
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie = "auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+
     toast.success("Logged out successfully!");
     navigate("/login");
   };

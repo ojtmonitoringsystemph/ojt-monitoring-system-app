@@ -35,7 +35,7 @@ interface Announcement {
     _id: string;
     name?: string;
     email?: string;
-  };
+  } | null;
 }
 
 interface Toast {
@@ -193,6 +193,7 @@ const Announcements: React.FC<PageProps> = ({ userRole, userName, onLogout }) =>
 
   // Get author name helper
   const getAuthorName = (createdBy: Announcement["createdBy"]) => {
+    if (!createdBy) return "Unknown";
     return createdBy.name || createdBy.email || "Unknown";
   };
 

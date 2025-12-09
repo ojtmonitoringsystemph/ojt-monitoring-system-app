@@ -31,7 +31,8 @@ interface Announcement {
         name?: string;
         email?: string;
       }
-    | string;
+    | string
+    | null;
 }
 
 const Dashboard = () => {
@@ -282,7 +283,7 @@ const Dashboard = () => {
 
   // Get author name helper
   const getAuthorName = (createdBy: Announcement["createdBy"]) => {
-    if (typeof createdBy === "string") {
+    if (!createdBy || typeof createdBy === "string") {
       return "Unknown";
     }
     return createdBy.name || createdBy.email?.split("@")[0] || "Unknown";
