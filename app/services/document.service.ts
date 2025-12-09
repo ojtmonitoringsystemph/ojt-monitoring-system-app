@@ -7,10 +7,12 @@ export const documentService = {
     api.get(`/document/${id}`, params ?? {}, { withAuth: true }),
   student: (id: string, params?: Record<string, any>) =>
     api.get(`/document/student/${id}`, params ?? {}, { withAuth: true }),
-  patch: (id: string, data: any) =>
-    api.patch(`/document/${id}`, data, { withAuth: true }),
+  patch: (id: string, data: any) => api.patch(`/document/${id}`, data, { withAuth: true }),
   create: (data: any) => api.post("/document", data, { withAuth: true }),
-  assignedToCompany: (data: any) =>
-    api.post("/document/assign-company", data, { withAuth: true }),
+  assignedToCompany: (data: any) => api.post("/document/assign-company", data, { withAuth: true }),
   search: (data: any) => api.post("/document/search", data, { withAuth: true }),
+  approve: (id: string, remarks?: string) =>
+    api.patch(`/document/approve/${id}`, { remarks }, { withAuth: true }),
+  disapprove: (id: string, remarks: string) =>
+    api.patch(`/document/disapprove/${id}`, { remarks }, { withAuth: true }),
 };

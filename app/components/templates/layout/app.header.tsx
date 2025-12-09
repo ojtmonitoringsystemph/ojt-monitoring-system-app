@@ -1,4 +1,3 @@
-import { Bell, User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import {
   DropdownMenu,
@@ -8,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
-import { Badge } from "@/components/atoms/badge";
+import { LogOut, Menu, User } from "lucide-react";
 import { useNavigate } from "react-router";
 
 interface AppHeaderProps {
@@ -48,7 +47,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-green-600 truncate">
               On-The-Job
             </h1>
-            <p className="text-xs text-gray-600 truncate">Training Monitoring</p>
+            <p className="text-xs text-gray-600 truncate">Training Monitoring System</p>
           </div>
         </div>
       </div>

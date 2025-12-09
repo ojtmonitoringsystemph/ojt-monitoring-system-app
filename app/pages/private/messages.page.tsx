@@ -75,7 +75,22 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
       return;
     }
     try {
-      const res = await userService.search({ firstName: receiverQuery });
+      // Get logged-in user's data from localStorage
+      const userData = getUserFromLocalStorage();
+      const actualUserRole = userData?.user?.role;
+      const userProgram = userData?.user?.program;
+
+      // Build query with program filter for coordinators
+      const query: any = { firstName: receiverQuery };
+
+      // Coordinators should only see students from their program
+      if (actualUserRole === "coordinator" && userProgram) {
+        // Ensure program is lowercase to match database values
+        query.program = userProgram.toLowerCase();
+        query.role = "student"; // Only show students to coordinators
+      }
+
+      const res = await userService.search(query);
       const filteredUsers = (res ?? [])
         .filter((u: User) => u._id !== currentUser._id) // Exclude current user
         .map((u: User) => ({
@@ -128,16 +143,12 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
 
     messages.forEach((msg) => {
       // Determine the conversation partner
-      const partner =
-        msg.sender._id === currentUser._id ? msg.receiver : msg.sender;
+      const partner = msg.sender._id === currentUser._id ? msg.receiver : msg.sender;
 
       if (partner) {
         // Use the most recent message for each conversation
         const existingMsg = convoMap.get(partner._id);
-        if (
-          !existingMsg ||
-          new Date(msg.sentAt) > new Date(existingMsg.sentAt)
-        ) {
+        if (!existingMsg || new Date(msg.sentAt) > new Date(existingMsg.sentAt)) {
           convoMap.set(partner._id, msg);
         }
       }
@@ -157,16 +168,12 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
 
     const chat = messages.filter(
       (m) =>
-        (m.sender._id === selectedUser._id &&
-          m.receiver?._id === currentUser._id) ||
-        (m.sender._id === currentUser._id &&
-          m.receiver?._id === selectedUser._id)
+        (m.sender._id === selectedUser._id && m.receiver?._id === currentUser._id) ||
+        (m.sender._id === currentUser._id && m.receiver?._id === selectedUser._id)
     );
 
     setChatMessages(
-      chat.sort(
-        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-      )
+      chat.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime())
     );
   }, [selectedUser, messages, currentUser._id]);
 
@@ -175,10 +182,7 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
     fetchMessages();
 
     socket.on("newMessage", (msg: Message) => {
-      if (
-        msg.sender._id === currentUser._id ||
-        msg.receiver?._id === currentUser._id
-      ) {
+      if (msg.sender._id === currentUser._id || msg.receiver?._id === currentUser._id) {
         setMessages((prev) => {
           // Avoid duplicates
           if (prev.some((m) => m._id === msg._id)) return prev;
@@ -239,9 +243,7 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
             {/* Search Results */}
             {receiverResults.length > 0 && (
               <div className="mb-2">
-                <p className="text-sm font-medium text-green-700 mb-1">
-                  Search Results:
-                </p>
+                <p className="text-sm font-medium text-green-700 mb-1">Search Results:</p>
                 <ul className="border-green-300 rounded-md max-h-40 overflow-y-auto">
                   {receiverResults.map((user) => (
                     <li
@@ -254,12 +256,8 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
                       className="p-2 hover:bg-green-50 cursor-pointer border-b last:border-b-0"
                     >
                       <span className="font-medium block">{user.name}</span>
-                      <span className="text-xs text-green-500 capitalize">
-                        {user.role}
-                      </span>
-                      <p className="text-xs text-green-500 truncate">
-                        {user.email}
-                      </p>
+                      <span className="text-xs text-green-500 capitalize">{user.role}</span>
+                      <p className="text-xs text-green-500 truncate">{user.email}</p>
                     </li>
                   ))}
                 </ul>
@@ -268,15 +266,11 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
 
             {/* Conversations */}
             <div className="flex-1 overflow-y-auto">
-              <p className="text-sm font-medium text-green-700 mb-2">
-                Conversations
-              </p>
+              <p className="text-sm font-medium text-green-700 mb-2">Conversations</p>
               {loading ? (
                 <p className="text-center text-green-500 mt-4">Loading...</p>
               ) : conversationList.length === 0 ? (
-                <p className="text-center text-green-500 mt-4">
-                  No messages yet
-                </p>
+                <p className="text-center text-green-500 mt-4">No messages yet</p>
               ) : (
                 conversationList
                   .filter(
@@ -285,10 +279,7 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
                       (msg.receiver && msg.receiver._id === currentUser._id)
                   )
                   .map((msg) => {
-                    const partner =
-                      msg.sender._id === currentUser._id
-                        ? msg.receiver
-                        : msg.sender;
+                    const partner = msg.sender._id === currentUser._id ? msg.receiver : msg.sender;
                     if (!partner) return null;
 
                     return (
@@ -303,22 +294,16 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
                           })
                         }
                         className={`p-3 border-b cursor-pointer hover:bg-green-50 ${
-                          selectedUser?._id === partner._id
-                            ? "bg-green-50 border-green-200"
-                            : ""
+                          selectedUser?._id === partner._id ? "bg-green-50 border-green-200" : ""
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <p className="font-medium text-green-800">
                             {partner.firstName} {partner.lastName}
                           </p>
-                          <span className="text-xs text-green-500 capitalize">
-                            {partner.role}
-                          </span>
+                          <span className="text-xs text-green-500 capitalize">{partner.role}</span>
                         </div>
-                        <p className="text-sm text-green-600 truncate">
-                          {msg.content}
-                        </p>
+                        <p className="text-sm text-green-600 truncate">{msg.content}</p>
                         <p className="text-xs text-green-400 mt-1">
                           {new Date(msg.sentAt).toLocaleDateString()}
                         </p>
@@ -343,9 +328,7 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
                       <h3 className="font-semibold text-green-800">
                         Chat with {selectedUser.name}
                       </h3>
-                      <p className="text-sm text-green-600 capitalize">
-                        {selectedUser.role}
-                      </p>
+                      <p className="text-sm text-green-600 capitalize">{selectedUser.role}</p>
                     </div>
                     <Button
                       variant="outline"
@@ -368,9 +351,7 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
                       <div
                         key={msg._id}
                         className={`flex ${
-                          msg.sender._id === currentUser._id
-                            ? "justify-end"
-                            : "justify-start"
+                          msg.sender._id === currentUser._id ? "justify-end" : "justify-start"
                         }`}
                       >
                         <div className="flex items-end max-w-xs">

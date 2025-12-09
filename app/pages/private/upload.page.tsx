@@ -20,6 +20,7 @@ interface Document {
   documentName: string;
   documents: string[];
   status: string;
+  remarks: string;
   uploadedAt: string;
 }
 
@@ -216,67 +217,317 @@ const Upload = ({ userRole, userName, onLogout }: PageProps) => {
           </CardContent>
         </Card>
 
-        {/* Uploaded Files */}
-        <Card className="shadow-lg border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Uploaded Documents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {documentsList.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No documents uploaded yet</p>
-            ) : (
-              <div className="space-y-4">
-                {documentsList.map((doc) => (
-                  <div key={doc._id} className="border rounded-lg p-4 hover:shadow-lg transition">
-                    <div className="flex items-start justify-between mb-3">
+        {/* Uploaded Documents */}
+        <div
+          style={{
+            backgroundColor: "#f5f5f5",
+            borderRadius: "12px",
+            padding: "2rem",
+            fontFamily: "Arial, sans-serif",
+          }}
+        >
+          <div style={{ marginBottom: "2rem" }}>
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                color: "#2e7d32",
+                marginBottom: "0.5rem",
+              }}
+            >
+              Your Uploaded Documents
+            </h2>
+            <p style={{ color: "#666", fontSize: "0.95rem" }}>
+              Track the status of your submitted documents and coordinator feedback
+            </p>
+          </div>
+
+          {documentsList.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "4rem",
+                backgroundColor: "#fff",
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              }}
+            >
+              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📄</div>
+              <p style={{ color: "#666", fontSize: "1.1rem" }}>No documents uploaded yet.</p>
+              <p style={{ color: "#888", fontSize: "0.9rem", marginTop: "0.5rem" }}>
+                Upload your first document using the form above.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: "1.5rem" }}>
+              {documentsList.map((doc) => {
+                const getStatusBadgeColor = (status: string) => {
+                  switch (status.toLowerCase()) {
+                    case "approved":
+                      return { bg: "#e8f5e9", text: "#2e7d32", border: "#81c784" };
+                    case "rejected":
+                      return { bg: "#ffebee", text: "#c62828", border: "#e57373" };
+                    default:
+                      return { bg: "#fff3e0", text: "#ef6c00", border: "#ffb74d" };
+                  }
+                };
+                const statusColors = getStatusBadgeColor(doc.status);
+
+                return (
+                  <div
+                    key={doc._id}
+                    style={{
+                      backgroundColor: "#fff",
+                      borderRadius: "12px",
+                      padding: "1.5rem",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                      border: "1px solid #e0e0e0",
+                      transition: "box-shadow 0.2s, transform 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    {/* Header Section */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "1rem",
+                        borderBottom: "1px solid #f0f0f0",
+                        paddingBottom: "1rem",
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <h3
+                          style={{
+                            fontSize: "1.3rem",
+                            fontWeight: "600",
+                            color: "#2e7d32",
+                            marginBottom: "0.5rem",
+                          }}
+                        >
+                          {doc.documentName}
+                        </h3>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "1.5rem",
+                            flexWrap: "wrap",
+                            fontSize: "0.9rem",
+                            color: "#666",
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontWeight: "500", color: "#444" }}>Program:</span>{" "}
+                            <span
+                              style={{
+                                textTransform: "uppercase",
+                                fontWeight: "600",
+                                color: "#2e7d32",
+                              }}
+                            >
+                              {doc.student.program || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: "0.4rem 1rem",
+                          borderRadius: "20px",
+                          fontSize: "0.85rem",
+                          fontWeight: "600",
+                          textTransform: "capitalize",
+                          backgroundColor: statusColors.bg,
+                          color: statusColors.text,
+                          border: `1px solid ${statusColors.border}`,
+                        }}
+                      >
+                        {doc.status}
+                      </div>
+                    </div>
+
+                    {/* Metadata Section */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "1rem",
+                        fontSize: "0.85rem",
+                        color: "#888",
+                      }}
+                    >
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-800">{doc.documentName}</h3>
-                        <p className="text-sm text-gray-500">
-                          Status: <span className="font-medium capitalize">{doc.status}</span>
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                        <span style={{ fontWeight: "500" }}>Uploaded:</span>{" "}
+                        {new Date(doc.uploadedAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </div>
+                      <div>
+                        <span style={{ fontWeight: "500" }}>Files:</span> {doc.documents.length}
+                      </div>
+                    </div>
+
+                    {/* Coordinator Remarks Section */}
+                    {doc.remarks && (
+                      <div
+                        style={{
+                          backgroundColor:
+                            doc.status === "approved"
+                              ? "#f9fbe7"
+                              : doc.status === "rejected"
+                              ? "#ffebee"
+                              : "#f3f4f6",
+                          padding: "0.75rem",
+                          borderRadius: "8px",
+                          marginBottom: "1rem",
+                          border:
+                            doc.status === "approved"
+                              ? "1px solid #f0f4c3"
+                              : doc.status === "rejected"
+                              ? "1px solid #ffcdd2"
+                              : "1px solid #e5e7eb",
+                        }}
+                      >
+                        <div
+                          style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: "600",
+                              textTransform: "uppercase",
+                              color:
+                                doc.status === "approved"
+                                  ? "#2e7d32"
+                                  : doc.status === "rejected"
+                                  ? "#c62828"
+                                  : "#666",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            {doc.status === "approved"
+                              ? "✓ Coordinator Approved"
+                              : doc.status === "rejected"
+                              ? "✗ Coordinator Feedback"
+                              : "📝 Coordinator Notes"}
+                          </span>
+                        </div>
+                        <p
+                          style={{
+                            fontSize: "0.9rem",
+                            color: "#444",
+                            margin: 0,
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {doc.remarks}
                         </p>
                       </div>
-                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        {doc.documents.length} file(s)
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {doc.documents.map((url, idx) => {
-                        const isImage = url.match(/\.(jpeg|jpg|png|gif)$/i);
+                    )}
+
+                    {/* Files Grid */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                        gap: "1rem",
+                      }}
+                    >
+                      {doc.documents.map((fileUrl, index) => {
+                        const isImage = fileUrl.match(/\.(jpeg|jpg|png|gif)$/i);
                         return (
                           <div
-                            key={`${doc._id}-${idx}`}
-                            className="border rounded-md p-3 flex flex-col items-center bg-gray-50"
+                            key={`${doc._id}-${index}`}
+                            style={{
+                              border: "1px solid #e0e0e0",
+                              borderRadius: "8px",
+                              padding: "0.75rem",
+                              backgroundColor: "#fafafa",
+                              textAlign: "center",
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f5f5f5";
+                              e.currentTarget.style.borderColor = "#2e7d32";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#fafafa";
+                              e.currentTarget.style.borderColor = "#e0e0e0";
+                            }}
                           >
                             {isImage ? (
                               <img
-                                src={url}
-                                alt="Uploaded"
-                                className="h-24 w-24 object-cover mb-2 rounded-md"
+                                src={fileUrl}
+                                alt={`Document ${index + 1}`}
+                                style={{
+                                  width: "100%",
+                                  height: "100px",
+                                  objectFit: "cover",
+                                  borderRadius: "6px",
+                                  marginBottom: "0.5rem",
+                                }}
                               />
                             ) : (
-                              <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
+                              <div
+                                style={{
+                                  fontSize: "2.5rem",
+                                  marginBottom: "0.5rem",
+                                  color: "#2e7d32",
+                                }}
+                              >
+                                📄
+                              </div>
                             )}
                             <a
-                              href={url}
+                              href={fileUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline"
+                              style={{
+                                display: "inline-block",
+                                padding: "0.4rem 0.8rem",
+                                fontSize: "0.8rem",
+                                color: "#fff",
+                                backgroundColor: "#2e7d32",
+                                borderRadius: "6px",
+                                textDecoration: "none",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#1b5e20")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#2e7d32")
+                              }
                             >
-                              {isImage ? "View Image" : "Download File"}
+                              {isImage ? "View Image" : "Download"}
                             </a>
+                            <div
+                              style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#999" }}
+                            >
+                              File {index + 1}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </PageLayout>
   );

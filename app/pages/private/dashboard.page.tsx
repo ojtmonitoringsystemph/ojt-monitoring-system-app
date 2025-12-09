@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { userService } from "~/app/services/user.service";
 import { getUserFromLocalStorage } from "~/app/utils/auth.helper";
 import { announcementService } from "@/services/announcement.service"; // Import announcement service
+import { messageService } from "@/services/message.service"; // Import message service
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Badge } from "@/components/atoms/badge";
 
@@ -39,6 +40,8 @@ const Dashboard = () => {
   const [dashboard, setDashboard] = useState<any>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [userRole, setUserRole] = useState(getUserFromLocalStorage()?.user?.role || "");
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [messagesLoading, setMessagesLoading] = useState(false);
 
   const fetchMyDashboard = async () => {
     try {
@@ -79,10 +82,40 @@ const Dashboard = () => {
       setAnnouncementsLoading(false);
     }
   };
+
+  const fetchMessages = async () => {
+    if (userRole !== "student") return;
+
+    try {
+      setMessagesLoading(true);
+      const currentUser = getUserFromLocalStorage()?.user;
+      if (!currentUser) return;
+
+      // Fetch all messages for the current user
+      const response = await messageService.search();
+      const allMessages = response || [];
+
+      // Filter messages from coordinator to student that are unread
+      const unreadFromCoordinator = allMessages.filter((msg: any) => {
+        return (
+          msg.receiver?._id === currentUser._id && // Message is for current user
+          msg.sender?.role === "coordinator" && // Message is from coordinator
+          !msg.isRead // Message is unread
+        );
+      });
+
+      setUnreadMessagesCount(unreadFromCoordinator.length);
+    } catch (error: any) {
+      console.error("Failed to fetch messages:", error);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
   useEffect(() => {
     if (userRole) {
       fetchMyDashboard();
       fetchAnnouncements();
+      fetchMessages();
     }
   }, [userRole]);
 
@@ -93,6 +126,7 @@ const Dashboard = () => {
         setUserRole(updatedRole);
         fetchMyDashboard();
         fetchAnnouncements();
+        fetchMessages();
       }
     };
 
@@ -189,6 +223,15 @@ const Dashboard = () => {
           trendValue: "",
         },
         {
+          title: "New Messages",
+          value: unreadMessagesCount,
+          description:
+            unreadMessagesCount > 0 ? "Unread messages from coordinator" : "No new messages",
+          icon: Users,
+          trend: unreadMessagesCount > 0 ? ("up" as const) : ("neutral" as const),
+          trendValue: unreadMessagesCount > 0 ? `+${unreadMessagesCount}` : "",
+        },
+        {
           title: "User Role",
           value:
             dashboard?.userRole?.charAt(0).toUpperCase() + dashboard?.userRole?.slice(1) ||
@@ -272,11 +315,12 @@ const Dashboard = () => {
             onClick={() => {
               fetchMyDashboard();
               fetchAnnouncements();
+              fetchMessages();
             }}
-            disabled={loading}
+            disabled={loading || messagesLoading}
             className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex-1 sm:flex-none text-xs sm:text-sm"
           >
-            {loading ? (
+            {loading || messagesLoading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 animate-spin" />
                 Refreshing...
@@ -319,7 +363,45 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Announcements Section - Only for admin and coordinator */}
+      {/* Message Notification for Students */}
+      {userRole === "student" && unreadMessagesCount > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader className="bg-orange-100">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-orange-700 flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                New Messages from Coordinator
+              </CardTitle>
+              <Badge variant="outline" className="bg-orange-200 text-orange-800">
+                {unreadMessagesCount} unread
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-800 font-medium">
+                  You have {unreadMessagesCount} new message{unreadMessagesCount > 1 ? "s" : ""}{" "}
+                  from your coordinator
+                </p>
+                <p className="text-sm text-orange-600 mt-1">
+                  Click below to view and respond to your messages
+                </p>
+              </div>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 text-white ml-4"
+                onClick={() => {
+                  window.location.href = "/messages";
+                }}
+              >
+                View Messages
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Announcements Section */}
 
       <div className="grid grid-cols-1  gap-6">
         {/* Left side - 2/3 width for other content (you can add other dashboard sections here) */}

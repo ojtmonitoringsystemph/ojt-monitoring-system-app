@@ -24,6 +24,16 @@ const DocumentsPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState<boolean>(false);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentEntry | null>(null);
+  const [approvalAction, setApprovalAction] = useState<"approve" | "disapprove" | null>(null);
+  const [remarks, setRemarks] = useState<string>("");
+
+  // Get user role for approval functionality
+  const userData = getUserFromLocalStorage();
+  const userRole = userData?.user?.role;
+  const isCoordinator = userRole === "coordinator";
 
   useEffect(() => {
     fetchDocuments();
@@ -70,7 +80,22 @@ const DocumentsPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await documentService.search({ query: value });
-      setDocuments(Array.isArray(res.data) ? res.data : []);
+      // Handle the response directly as it should be an array of documents
+      const searchResults = Array.isArray(res) ? res : [];
+
+      // Apply the same filtering logic as fetchDocuments for coordinators
+      const userData = getUserFromLocalStorage();
+      const actualUserRole = userData?.user?.role;
+      const userProgram = userData?.user?.program?.toLowerCase();
+
+      if (actualUserRole === "coordinator" && userProgram) {
+        const filteredResults = searchResults.filter(
+          (doc: DocumentEntry) => doc.student.program?.toLowerCase() === userProgram
+        );
+        setDocuments(filteredResults);
+      } else {
+        setDocuments(searchResults);
+      }
     } catch (error) {
       console.error("Error searching documents:", error);
       setDocuments([]);
@@ -88,6 +113,55 @@ const DocumentsPage: React.FC = () => {
       default:
         return { bg: "#fff3e0", text: "#ef6c00", border: "#ffb74d" };
     }
+  };
+
+  const handleApprovalAction = (document: DocumentEntry, action: "approve" | "disapprove") => {
+    setSelectedDocument(document);
+    setApprovalAction(action);
+    setRemarks(action === "approve" ? "Document approved" : "");
+    setShowApprovalModal(true);
+  };
+
+  const submitApprovalAction = async () => {
+    if (!selectedDocument || !approvalAction) return;
+
+    if (approvalAction === "disapprove" && !remarks.trim()) {
+      alert("Remarks are required when disapproving a document.");
+      return;
+    }
+
+    try {
+      setActionLoading(selectedDocument._id);
+
+      if (approvalAction === "approve") {
+        await documentService.approve(selectedDocument._id, remarks || undefined);
+      } else {
+        await documentService.disapprove(selectedDocument._id, remarks.trim());
+      }
+
+      // Refresh documents list
+      await fetchDocuments();
+
+      // Close modal and reset state
+      setShowApprovalModal(false);
+      setSelectedDocument(null);
+      setApprovalAction(null);
+      setRemarks("");
+
+      alert(`Document ${approvalAction}d successfully!`);
+    } catch (error: any) {
+      console.error("Error processing approval action:", error);
+      alert(error?.response?.data?.message || `Failed to ${approvalAction} document`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const cancelApprovalAction = () => {
+    setShowApprovalModal(false);
+    setSelectedDocument(null);
+    setApprovalAction(null);
+    setRemarks("");
   };
 
   return (
@@ -298,6 +372,76 @@ const DocumentsPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Approval Buttons for Coordinators */}
+                  {isCoordinator && entry.status === "pending" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "0.75rem",
+                        marginBottom: "1rem",
+                        paddingTop: "1rem",
+                        borderTop: "1px solid #f0f0f0",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleApprovalAction(entry, "approve")}
+                        disabled={actionLoading === entry._id}
+                        style={{
+                          flex: 1,
+                          padding: "0.75rem 1rem",
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          color: "#fff",
+                          backgroundColor: actionLoading === entry._id ? "#a5d6a7" : "#2e7d32",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: actionLoading === entry._id ? "not-allowed" : "pointer",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (actionLoading !== entry._id) {
+                            e.currentTarget.style.backgroundColor = "#1b5e20";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (actionLoading !== entry._id) {
+                            e.currentTarget.style.backgroundColor = "#2e7d32";
+                          }
+                        }}
+                      >
+                        {actionLoading === entry._id ? "Processing..." : "✓ Approve"}
+                      </button>
+                      <button
+                        onClick={() => handleApprovalAction(entry, "disapprove")}
+                        disabled={actionLoading === entry._id}
+                        style={{
+                          flex: 1,
+                          padding: "0.75rem 1rem",
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          color: "#fff",
+                          backgroundColor: actionLoading === entry._id ? "#ef9a9a" : "#c62828",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: actionLoading === entry._id ? "not-allowed" : "pointer",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (actionLoading !== entry._id) {
+                            e.currentTarget.style.backgroundColor = "#b71c1c";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (actionLoading !== entry._id) {
+                            e.currentTarget.style.backgroundColor = "#c62828";
+                          }
+                        }}
+                      >
+                        {actionLoading === entry._id ? "Processing..." : "✗ Disapprove"}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Files Grid */}
                   <div
                     style={{
@@ -385,6 +529,184 @@ const DocumentsPage: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Approval Modal */}
+        {showApprovalModal && selectedDocument && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "1rem",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) cancelApprovalAction();
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: "12px",
+                padding: "2rem",
+                width: "100%",
+                maxWidth: "500px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.16)",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: "600",
+                  color: approvalAction === "approve" ? "#2e7d32" : "#c62828",
+                  marginBottom: "1rem",
+                }}
+              >
+                {approvalAction === "approve" ? "Approve Document" : "Disapprove Document"}
+              </h3>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <p style={{ color: "#666", marginBottom: "0.5rem" }}>
+                  <strong>Document:</strong> {selectedDocument.documentName}
+                </p>
+                <p style={{ color: "#666", marginBottom: "0.5rem" }}>
+                  <strong>Student:</strong> {selectedDocument.student.firstName}{" "}
+                  {selectedDocument.student.lastName}
+                </p>
+              </div>
+
+              <div style={{ marginBottom: "2rem" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: "500",
+                    color: "#444",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {approvalAction === "disapprove"
+                    ? "Reason for disapproval *"
+                    : "Remarks (optional)"}
+                </label>
+                <textarea
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder={
+                    approvalAction === "disapprove"
+                      ? "Please provide a reason for disapproving this document..."
+                      : "Add any remarks about this approval..."
+                  }
+                  style={{
+                    width: "100%",
+                    minHeight: "100px",
+                    padding: "0.75rem",
+                    fontSize: "0.9rem",
+                    borderRadius: "8px",
+                    border: "2px solid #e0e0e0",
+                    backgroundColor: "#fff",
+                    boxSizing: "border-box",
+                    outline: "none",
+                    resize: "vertical",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) =>
+                    (e.target.style.borderColor =
+                      approvalAction === "approve" ? "#2e7d32" : "#c62828")
+                  }
+                  onBlur={(e) => (e.target.style.borderColor = "#e0e0e0")}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+                <button
+                  onClick={cancelApprovalAction}
+                  disabled={actionLoading === selectedDocument._id}
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    fontSize: "0.9rem",
+                    fontWeight: "500",
+                    color: "#666",
+                    backgroundColor: "#f5f5f5",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: actionLoading === selectedDocument._id ? "not-allowed" : "pointer",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (actionLoading !== selectedDocument._id) {
+                      e.currentTarget.style.backgroundColor = "#e0e0e0";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (actionLoading !== selectedDocument._id) {
+                      e.currentTarget.style.backgroundColor = "#f5f5f5";
+                    }
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitApprovalAction}
+                  disabled={
+                    actionLoading === selectedDocument._id ||
+                    (approvalAction === "disapprove" && !remarks.trim())
+                  }
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    color: "#fff",
+                    backgroundColor:
+                      actionLoading === selectedDocument._id
+                        ? "#ccc"
+                        : approvalAction === "approve"
+                        ? "#2e7d32"
+                        : "#c62828",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor:
+                      actionLoading === selectedDocument._id ||
+                      (approvalAction === "disapprove" && !remarks.trim())
+                        ? "not-allowed"
+                        : "pointer",
+                    transition: "background-color 0.2s",
+                    opacity: approvalAction === "disapprove" && !remarks.trim() ? 0.6 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (
+                      actionLoading !== selectedDocument._id &&
+                      !(approvalAction === "disapprove" && !remarks.trim())
+                    ) {
+                      e.currentTarget.style.backgroundColor =
+                        approvalAction === "approve" ? "#1b5e20" : "#b71c1c";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (
+                      actionLoading !== selectedDocument._id &&
+                      !(approvalAction === "disapprove" && !remarks.trim())
+                    ) {
+                      e.currentTarget.style.backgroundColor =
+                        approvalAction === "approve" ? "#2e7d32" : "#c62828";
+                    }
+                  }}
+                >
+                  {actionLoading === selectedDocument._id
+                    ? `${approvalAction === "approve" ? "Approving" : "Disapproving"}...`
+                    : approvalAction === "approve"
+                    ? "Approve Document"
+                    : "Disapprove Document"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
