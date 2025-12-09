@@ -80,7 +80,7 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
       const actualUserRole = userData?.user?.role;
       const userProgram = userData?.user?.program;
 
-      // Build query with program filter for coordinators
+      // Build query with program filter for coordinators and students
       const query: any = { firstName: receiverQuery };
 
       // Coordinators should only see students from their program
@@ -88,6 +88,13 @@ const Messages = ({ userRole, userName, onLogout }: any) => {
         // Ensure program is lowercase to match database values
         query.program = userProgram.toLowerCase();
         query.role = "student"; // Only show students to coordinators
+      }
+
+      // Students should only see coordinators from their program
+      if (actualUserRole === "student" && userProgram) {
+        // Ensure program is lowercase to match database values
+        query.program = userProgram.toLowerCase();
+        query.role = "coordinator"; // Only show coordinators to students
       }
 
       const res = await userService.search(query);
