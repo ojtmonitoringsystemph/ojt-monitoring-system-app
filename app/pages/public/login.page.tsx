@@ -12,9 +12,7 @@ const Login = ({ onLogin }: LoginProps) => {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "coordinator" | "student">(
-    "admin"
-  );
+  const [role, setRole] = useState<"admin" | "coordinator" | "student">("admin");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,8 +38,7 @@ const Login = ({ onLogin }: LoginProps) => {
     } catch (err: any) {
       console.error("Login failed:", err);
       setError(
-        err.response?.data?.message ||
-          "Invalid credentials or network error. Please try again."
+        err.response?.data?.message || "Invalid credentials or network error. Please try again."
       );
       setLoading(false);
     }
@@ -62,9 +59,7 @@ const Login = ({ onLogin }: LoginProps) => {
           <div className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
               <input
                 type="email"
                 value={username}
@@ -77,9 +72,7 @@ const Login = ({ onLogin }: LoginProps) => {
 
             {/* Password */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
 
               <input
                 type={showPassword ? "text" : "password"}
@@ -100,11 +93,7 @@ const Login = ({ onLogin }: LoginProps) => {
             </div>
 
             {/* Error */}
-            {error && (
-              <p className="text-red-600 text-sm font-medium text-center">
-                {error}
-              </p>
-            )}
+            {error && <p className="text-red-600 text-sm font-medium text-center">{error}</p>}
 
             {/* Login Button */}
             <button
@@ -136,10 +125,8 @@ const Login = ({ onLogin }: LoginProps) => {
         {/* RIGHT SIDE: Appears only on large screens */}
         <div className="hidden lg:flex flex-col items-center justify-center p-8 text-center">
           <img src="intern.gif" alt="" className="w-400 mb-6" />
-          <h1 className="text-3xl font-bold text-green-600">
-            Green Intern Compass
-          </h1>
-          <p className="text-gray-600 mt-2">Internship Tracking System</p>
+          <h1 className="text-3xl font-bold text-green-600">On-The-Job</h1>
+          <p className="text-gray-600 mt-2">Training Monitoring System</p>
         </div>
       </div>
     </div>
